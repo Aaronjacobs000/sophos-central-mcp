@@ -4,17 +4,32 @@ MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Su
 
 ## Quick Start
 
-```bash
-git clone https://github.com/Aaronjacobs000/sophos-central-mcp.git
-cd sophos-central-mcp
-npm install
-cp .env.example .env
-# Edit .env with your Sophos Central API credentials
-npm run build
-npm start
+No installation needed. Add the following to your `claude_desktop_config.json` (Claude Desktop) or equivalent MCP client config:
+
+```json
+{
+  "mcpServers": {
+    "sophos-central": {
+      "command": "npx",
+      "args": ["-y", "sophos-central-mcp-server"],
+      "env": {
+        "SOPHOS_CLIENT_ID": "your-client-id",
+        "SOPHOS_CLIENT_SECRET": "your-client-secret",
+        "TRANSPORT": "stdio"
+      }
+    }
+  }
+}
 ```
 
-Server starts on `http://127.0.0.1:3100/mcp`.
+Replace `your-client-id` and `your-client-secret` with your [Sophos Central API credentials](#creating-api-credentials). Claude Desktop will download and run the server automatically on first use.
+
+### Claude Code
+
+```bash
+SOPHOS_CLIENT_ID=xxx SOPHOS_CLIENT_SECRET=yyy TRANSPORT=stdio \
+  claude mcp add sophos-central -- npx -y sophos-central-mcp-server
+```
 
 ## Features
 
@@ -56,36 +71,6 @@ TRANSPORT=http
 | `SOPHOS_TENANT_ID` | No | - | Lock to a single tenant (useful for tenant-level creds) |
 | `PORT` | No | 3100 | HTTP server port |
 | `TRANSPORT` | No | http | `http` for streamable HTTP, `stdio` for subprocess mode |
-
-## Connecting to Claude
-
-### Claude Desktop
-
-Add to your `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "sophos-central": {
-      "url": "http://localhost:3100/mcp"
-    }
-  }
-}
-```
-
-### Claude Code
-
-```bash
-claude mcp add sophos-central http://localhost:3100/mcp
-```
-
-### stdio mode
-
-For subprocess-based clients, set `TRANSPORT=stdio` and run:
-
-```bash
-SOPHOS_CLIENT_ID=xxx SOPHOS_CLIENT_SECRET=yyy TRANSPORT=stdio node dist/index.js
-```
 
 ## Tools
 

@@ -1,0 +1,10 @@
+node_modules/
+src/
+tsconfig.json
+.env
+.env.*
+*.tgz
+.git/
+.github/
+.claude/
+CLAUDE.md
