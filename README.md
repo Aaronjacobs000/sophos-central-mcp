@@ -27,9 +27,11 @@ Replace `your-client-id` and `your-client-secret` with your [Sophos Central API 
 ### Claude Code
 
 ```bash
-SOPHOS_CLIENT_ID=xxx SOPHOS_CLIENT_SECRET=yyy TRANSPORT=stdio \
-  claude mcp add sophos-central -- npx -y sophos-central-mcp-server
-```
+export SOPHOS_CLIENT_ID="xxx"
+export SOPHOS_CLIENT_SECRET="yyy"
+export TRANSPORT="stdio"
+claude mcp add sophos-central -- npx -y sophos-central-mcp-server
+```  
 
 ## Features
 
