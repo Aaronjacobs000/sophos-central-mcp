@@ -33,6 +33,7 @@ export TRANSPORT="stdio"
 claude mcp add sophos-central -- npx -y sophos-central-mcp-server
 ```  
 
+
 ## Features
 
 - **Universal caller support**: Works with partner, organisation, and tenant-level API credentials
