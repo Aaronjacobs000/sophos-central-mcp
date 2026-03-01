@@ -63,7 +63,7 @@ export class TokenManager {
 
     const data = (await response.json()) as SophosTokenResponse;
 
-    if (data.errorCode) {
+    if (data.errorCode && data.errorCode !== "success") {
       throw new Error(
         `Sophos auth error: ${data.errorCode} - ${data.message}`
       );
