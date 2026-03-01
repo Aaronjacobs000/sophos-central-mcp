@@ -19,12 +19,13 @@ const CONCURRENCY = 10;
 function extractOverallScore(data: Record<string, unknown> | null): number | null {
   if (!data) return null;
   const scores: number[] = [];
-  for (const section of ["endpoint", "server"]) {
-    const s = data[section] as Record<string, unknown> | undefined;
-    const protection = s?.["protection"] as Record<string, unknown> | undefined;
-    const globalDetail = protection?.["globalDetail"] as Record<string, unknown> | undefined;
-    if (typeof globalDetail?.["score"] === "number") {
-      scores.push(globalDetail["score"] as number);
+  // Health response structure: data.endpoint.protection.computer.score / .server.score
+  const endpoint = data["endpoint"] as Record<string, unknown> | undefined;
+  const protection = endpoint?.["protection"] as Record<string, unknown> | undefined;
+  for (const deviceType of ["computer", "server"]) {
+    const deviceProtection = protection?.[deviceType] as Record<string, unknown> | undefined;
+    if (typeof deviceProtection?.["score"] === "number") {
+      scores.push(deviceProtection["score"] as number);
     }
   }
   return scores.length > 0 ? Math.min(...scores) : null;

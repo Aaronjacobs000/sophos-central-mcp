@@ -209,7 +209,7 @@ Args:
       await client.tenantRequest(
         resolvedTenantId,
         `/endpoint/v1/endpoints/${endpoint_id}/scans`,
-        { method: "POST" }
+        { method: "POST", body: {} }
       );
       return jsonResult({
         status: "scan_initiated",

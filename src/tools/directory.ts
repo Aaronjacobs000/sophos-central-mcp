@@ -179,10 +179,11 @@ Args:
         { params }
       );
 
+      const items = data.items ?? [];
       return jsonResult({
-        total: data.pages.total ?? data.pages.items ?? data.items.length,
-        page: data.pages.current ?? page,
-        admins: data.items.map((a) => ({
+        total: data.pages?.total ?? data.pages?.items ?? items.length,
+        page: data.pages?.current ?? page,
+        admins: items.map((a) => ({
           id: a.id,
           name: a.name ?? null,
           roles: a.roleAssignments ?? [],
@@ -242,13 +243,14 @@ Args:
       };
 
       const data = await client.tenantRequest<
-        SophosPagedResponse<Record<string, unknown>>
+        { items?: Record<string, unknown>[]; pages?: { current?: number; total?: number; items?: number } }
       >(resolvedTenantId, "/common/v1/roles", { params });
 
+      const items = data.items ?? [];
       return jsonResult({
-        total: data.pages.total ?? data.pages.items ?? data.items.length,
-        page: data.pages.current ?? page,
-        roles: data.items,
+        total: data.pages?.total ?? data.pages?.items ?? items.length,
+        page: data.pages?.current ?? page,
+        roles: items,
       });
     })
   );

@@ -48,7 +48,7 @@ export class SophosClient {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${token}`,
       "X-Tenant-ID": tenantId,
-      "Content-Type": "application/json",
+      ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
       ...options.headers,
     };
 
@@ -87,7 +87,7 @@ export class SophosClient {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${token}`,
       [idHeader.name]: idHeader.value,
-      "Content-Type": "application/json",
+      ...(options.body !== undefined ? { "Content-Type": "application/json" } : {}),
       ...options.headers,
     };
 
@@ -135,7 +135,7 @@ export class SophosClient {
           }
 
           const msg = parsed
-            ? `Sophos API error: ${parsed.error} - ${parsed.message}${parsed.correlationId ? ` (correlationId: ${parsed.correlationId})` : ""}`
+            ? `Sophos API error ${response.status}: ${parsed.error}${parsed.message ? ` - ${parsed.message}` : ""}${parsed.correlationId ? ` (correlationId: ${parsed.correlationId})` : ""}`
             : `Sophos API error (${response.status}): ${errorBody.slice(0, 500)}`;
 
           throw new Error(msg);
@@ -150,12 +150,8 @@ export class SophosClient {
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
 
-        // Don't retry on auth or client errors
-        if (
-          lastError.message.includes("401") ||
-          lastError.message.includes("403") ||
-          lastError.message.includes("404")
-        ) {
+        // Don't retry on 4xx client errors (message contains "error NNN:" where NNN is 4xx)
+        if (/Sophos API error 4\d\d:/.test(lastError.message)) {
           throw lastError;
         }
 
