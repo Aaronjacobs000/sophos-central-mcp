@@ -56,6 +56,7 @@ Returns:
       inputSchema: {
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
       },

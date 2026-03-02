@@ -112,7 +112,14 @@ export class SophosClient {
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const response = await fetch(url, options);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30_000);
+        let response: globalThis.Response;
+        try {
+          response = await fetch(url, { ...options, signal: controller.signal });
+        } finally {
+          clearTimeout(timeout);
+        }
 
         if (response.status === 429) {
           // Rate limited: wait and retry

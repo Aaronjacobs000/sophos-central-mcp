@@ -58,6 +58,7 @@ Returns:
       inputSchema: {
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
         search: z
@@ -140,6 +141,7 @@ Args:
       inputSchema: {
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
         limit: z
@@ -209,6 +211,7 @@ Args:
       inputSchema: {
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
         limit: z

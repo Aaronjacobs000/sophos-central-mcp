@@ -40,6 +40,7 @@ Returns:
       inputSchema: {
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
         severity: z
@@ -126,9 +127,10 @@ Args:
   - alert_id (string): The alert ID.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        alert_id: z.string().describe("Alert ID to retrieve"),
+        alert_id: z.string().uuid().describe("Alert ID to retrieve"),
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
       },
@@ -163,9 +165,10 @@ Args:
   - alert_id (string): The alert ID to acknowledge.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        alert_id: z.string().describe("Alert ID to acknowledge"),
+        alert_id: z.string().uuid().describe("Alert ID to acknowledge"),
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
       },

@@ -21,11 +21,18 @@ export function loadConfig(): SophosConfig {
     );
   }
 
+  const rawPort = parseInt(process.env.PORT || "3100", 10);
+  if (!Number.isInteger(rawPort) || rawPort < 1 || rawPort > 65535) {
+    throw new Error(
+      `Invalid PORT value "${process.env.PORT}". Must be an integer between 1 and 65535.`
+    );
+  }
+
   return {
     clientId,
     clientSecret,
     tenantId: process.env.SOPHOS_TENANT_ID || undefined,
-    port: parseInt(process.env.PORT || "3100", 10),
+    port: rawPort,
     transport: (process.env.TRANSPORT as "http" | "stdio") || "http",
   };
 }

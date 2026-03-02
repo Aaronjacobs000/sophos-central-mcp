@@ -59,6 +59,7 @@ Returns:
       inputSchema: {
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
         policy_type: z
@@ -127,9 +128,10 @@ Args:
   - policy_id (string): The policy ID.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        policy_id: z.string().describe("Policy ID to retrieve"),
+        policy_id: z.string().uuid().describe("Policy ID to retrieve"),
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
       },
@@ -172,9 +174,10 @@ Args:
   - enforced (boolean, optional): Whether policy settings are enforced (cannot be overridden by lower-priority policies).
   - settings (object, optional): Policy settings object to merge. Only include settings you want to change.`,
       inputSchema: {
-        policy_id: z.string().describe("Policy ID to update"),
+        policy_id: z.string().uuid().describe("Policy ID to update"),
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
         name: z.string().optional().describe("New policy name"),
@@ -247,10 +250,11 @@ Args:
   - name (string): Name for the new cloned policy.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        source_policy_id: z.string().describe("Policy ID to clone from"),
+        source_policy_id: z.string().uuid().describe("Policy ID to clone from"),
         name: z.string().describe("Name for the cloned policy"),
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
       },

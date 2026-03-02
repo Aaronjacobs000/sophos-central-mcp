@@ -44,6 +44,7 @@ Returns:
       inputSchema: {
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
         health_status: z
@@ -154,9 +155,10 @@ Args:
   - endpoint_id (string): The endpoint ID.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        endpoint_id: z.string().describe("Endpoint ID to retrieve"),
+        endpoint_id: z.string().uuid().describe("Endpoint ID to retrieve"),
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
       },
@@ -191,9 +193,10 @@ Args:
   - endpoint_id (string): The endpoint ID to scan.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        endpoint_id: z.string().describe("Endpoint ID to scan"),
+        endpoint_id: z.string().uuid().describe("Endpoint ID to scan"),
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
       },
@@ -236,13 +239,14 @@ Args:
   - comment (string, optional): Reason for isolation.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        endpoint_id: z.string().describe("Endpoint ID to isolate"),
+        endpoint_id: z.string().uuid().describe("Endpoint ID to isolate"),
         comment: z
           .string()
           .optional()
           .describe("Reason for isolation"),
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
       },
@@ -283,13 +287,14 @@ Args:
   - comment (string, optional): Reason for releasing isolation.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        endpoint_id: z.string().describe("Endpoint ID to release"),
+        endpoint_id: z.string().uuid().describe("Endpoint ID to release"),
         comment: z
           .string()
           .optional()
           .describe("Reason for releasing isolation"),
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
       },

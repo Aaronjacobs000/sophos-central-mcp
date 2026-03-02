@@ -55,6 +55,7 @@ Returns:
       inputSchema: {
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
         search: z.string().optional().describe("Search by group name"),
@@ -120,9 +121,10 @@ Args:
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
   - include_endpoints (boolean, optional): Include list of member endpoints (default false).`,
       inputSchema: {
-        group_id: z.string().describe("Endpoint group ID"),
+        group_id: z.string().uuid().describe("Endpoint group ID"),
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
         include_endpoints: z
@@ -197,6 +199,7 @@ Args:
           .describe("Initial endpoint IDs to add"),
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
       },
@@ -240,11 +243,12 @@ Args:
   - description (string, optional): New group description.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        group_id: z.string().describe("Group ID to update"),
+        group_id: z.string().uuid().describe("Group ID to update"),
         name: z.string().optional().describe("New group name"),
         description: z.string().optional().describe("New description"),
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
       },
@@ -293,9 +297,10 @@ Args:
   - group_id (string): Group ID to delete.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        group_id: z.string().describe("Group ID to delete"),
+        group_id: z.string().uuid().describe("Group ID to delete"),
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
       },
@@ -333,13 +338,14 @@ Args:
   - endpoint_ids (array): Array of endpoint IDs to add.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        group_id: z.string().describe("Group ID"),
+        group_id: z.string().uuid().describe("Group ID"),
         endpoint_ids: z
-          .array(z.string())
+          .array(z.string().uuid())
           .min(1)
           .describe("Endpoint IDs to add"),
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
       },
@@ -385,10 +391,11 @@ Args:
   - endpoint_id (string): Endpoint ID to remove.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        group_id: z.string().describe("Group ID"),
-        endpoint_id: z.string().describe("Endpoint ID to remove"),
+        group_id: z.string().uuid().describe("Group ID"),
+        endpoint_id: z.string().uuid().describe("Endpoint ID to remove"),
         tenant_id: z
           .string()
+          .uuid()
           .optional()
           .describe("Tenant ID. Required for partner/org callers."),
       },
