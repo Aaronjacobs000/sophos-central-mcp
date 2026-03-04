@@ -164,6 +164,178 @@ export interface SophosHealthCheck {
   };
 }
 
+// --- Cases ---
+
+export interface SophosCase {
+  id: string;
+  type: string;
+  name: string;
+  severity: string;
+  status: string;
+  assignee?: string;
+  overview?: string;
+  tenant: { id: string };
+  managedBy?: string;
+  createdAt: string;
+  createdBy?: { id?: string; name?: string; email?: string };
+  updatedAt?: string;
+  detectionCount?: number;
+  initialDetection?: { id: string };
+}
+
+export interface SophosCasePage {
+  pages: {
+    current: number;
+    size: number;
+    total: number;
+    maxSize: number;
+  };
+  items: SophosCase[];
+}
+
+export interface SophosCaseDetection {
+  id: string;
+  attackType?: string;
+  detectionDescription?: string;
+  detectionRule?: string;
+  sensorGeneratedAt?: string;
+  severity?: number;
+  device?: { id: string; type: string; entity?: string };
+  sensor?: { id: string; type: string; source?: string };
+}
+
+export interface SophosCaseDetectionPage {
+  pages: {
+    current?: number;
+    size: number;
+    total?: number;
+    maxSize: number;
+    items?: number;
+  };
+  items: SophosCaseDetection[];
+}
+
+export interface SophosCaseMitreSummary {
+  tactics: Array<{
+    id: string;
+    name: string;
+    techniques: Array<{ id: string; name: string; count: number }>;
+  }>;
+}
+
+// --- Detections ---
+
+export interface SophosQueryRun {
+  id: string;
+  createdAt: string;
+  result: "notAvailable" | "succeeded" | "failed";
+  status: "pending" | "finished";
+  finishedAt?: string;
+  expiresAt?: string;
+}
+
+export interface SophosDetection {
+  id: string;
+  attackType?: string;
+  caseDescription?: string;
+  detectionDescription?: string;
+  detectionRule?: string;
+  sensorGeneratedAt?: string;
+  severity?: number;
+  sensor?: { id: string; type: string; source?: string; version?: string };
+  device?: { id: string; type: string; entity?: string };
+  detectionAttack?: Record<string, unknown>;
+}
+
+export interface SophosDetectionsResultPage {
+  pages: {
+    current?: number;
+    size: number;
+    total?: number;
+    maxSize: number;
+    items?: number;
+  };
+  items: SophosDetection[];
+}
+
+// --- SIEM ---
+
+export interface SophosSiemEvent {
+  id: string;
+  type: string;
+  name: string;
+  severity?: string;
+  when: string;
+  created_at?: string;
+  source?: string;
+  user_id?: string;
+  location?: string;
+  data?: Record<string, unknown>;
+}
+
+export interface SophosSiemResponse {
+  items: SophosSiemEvent[];
+  next_cursor: string;
+  has_more: boolean;
+}
+
+// --- XDR Query ---
+
+export interface SophosXdrQueryResultsPage {
+  items: Record<string, unknown>[];
+  metadata?: {
+    columns: Array<{ name: string; type: string }>;
+  };
+  pages: {
+    fromKey?: string;
+    nextKey?: string;
+    size: number;
+    maxSize: number;
+    total?: number | null;
+  };
+}
+
+// --- Live Discover ---
+
+export interface SophosLiveDiscoverQuery {
+  id: string;
+  name: string;
+  code?: string;
+  description?: string;
+  template?: string;
+}
+
+export interface SophosLiveDiscoverQueryPage {
+  pages: {
+    current?: number;
+    size: number;
+    total?: number;
+    maxSize: number;
+  };
+  items: SophosLiveDiscoverQuery[];
+}
+
+export interface SophosLiveDiscoverRun {
+  id: string;
+  status: string;
+  template?: string;
+  performance?: Record<string, unknown>;
+  endpointCounts?: Record<string, number>;
+  createdAt?: string;
+  finishedAt?: string;
+}
+
+export interface SophosLiveDiscoverResultsPage {
+  items: Record<string, unknown>[];
+  pages: {
+    fromKey?: string;
+    nextKey?: string;
+    size: number;
+    maxSize: number;
+    total?: number | null;
+  };
+}
+
 // --- Generic Error ---
 
 export interface SophosApiError {

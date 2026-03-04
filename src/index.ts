@@ -26,6 +26,11 @@ import { registerDirectoryTools } from "./tools/directory.js";
 import { registerPolicyTools } from "./tools/policies.js";
 import { registerGroupTools } from "./tools/groups.js";
 import { registerExclusionTools } from "./tools/exclusions.js";
+import { registerCaseTools } from "./tools/cases.js";
+import { registerDetectionTools } from "./tools/detections.js";
+import { registerSiemTools } from "./tools/siem.js";
+import { registerXdrTools } from "./tools/xdr.js";
+import { registerLiveDiscoverTools } from "./tools/live-discover.js";
 
 async function main(): Promise<void> {
   // Load and validate config
@@ -50,7 +55,7 @@ async function main(): Promise<void> {
   // Create the MCP server
   const server = new McpServer({
     name: "sophos-central-mcp-server",
-    version: "0.1.0",
+    version: "0.1.7",
   });
 
   // Register tools based on identity type
@@ -71,6 +76,13 @@ async function main(): Promise<void> {
   registerPolicyTools(server, sophosClient, tenantResolver);
   registerGroupTools(server, sophosClient, tenantResolver);
   registerExclusionTools(server, sophosClient, tenantResolver);
+
+  // Phase 3: Investigation tools
+  registerCaseTools(server, sophosClient, tenantResolver);
+  registerDetectionTools(server, sophosClient, tenantResolver);
+  registerSiemTools(server, sophosClient, tenantResolver);
+  registerXdrTools(server, sophosClient, tenantResolver);
+  registerLiveDiscoverTools(server, sophosClient, tenantResolver);
 
   console.error("[sophos-mcp] All tools registered.");
 

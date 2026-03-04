@@ -1,0 +1,404 @@
+/**
+ * Tools: sophos_list_cases, sophos_get_case, sophos_create_case, sophos_update_case,
+ *        sophos_list_case_detections, sophos_get_case_mitre_summary
+ * Interact with the Sophos Cases API /cases/v1/cases
+ */
+
+import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { SophosClient } from "../client/sophos-client.js";
+import type { TenantResolver } from "../client/tenant-resolver.js";
+import type {
+  SophosCase,
+  SophosCasePage,
+  SophosCaseDetectionPage,
+  SophosCaseMitreSummary,
+} from "../types/sophos.js";
+import { jsonResult, withErrorHandling } from "./helpers.js";
+
+// Cases API max page size is 50
+const CASES_MAX_PAGE_SIZE = 50;
+
+export function registerCaseTools(
+  server: McpServer,
+  client: SophosClient,
+  tenantResolver: TenantResolver
+): void {
+  // --- List Cases ---
+  server.registerTool(
+    "sophos_list_cases",
+    {
+      title: "List Sophos Cases",
+      description: `List investigation cases from a Sophos Central tenant.
+
+Retrieves cases from the Cases API with optional pagination.
+
+Args:
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - limit (number, optional): Results per page (1-50, default 50).
+  - page (number, optional): Page number (default 1).
+
+Returns:
+  Paginated list of cases with: id, name, type, severity, status, assignee, detectionCount, createdAt, updatedAt.`,
+      inputSchema: {
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(CASES_MAX_PAGE_SIZE)
+          .optional()
+          .default(CASES_MAX_PAGE_SIZE)
+          .describe("Results per page (max 50)"),
+        page: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .default(1)
+          .describe("Page number (default 1)"),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ tenant_id, limit, page }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest<SophosCasePage>(
+        resolvedTenantId,
+        "/cases/v1/cases",
+        {
+          params: {
+            pageSize: String(limit),
+            page: String(page),
+          },
+        }
+      );
+      return jsonResult({
+        total: data.pages.total,
+        page: data.pages.current ?? page,
+        page_size: data.pages.size,
+        total_pages: data.pages.total,
+        cases: data.items.map(formatCase),
+      });
+    })
+  );
+
+  // --- Get Case ---
+  server.registerTool(
+    "sophos_get_case",
+    {
+      title: "Get Sophos Case",
+      description: `Get full details of a specific Sophos Central case by ID.
+
+Args:
+  - case_id (string): The case ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+
+Returns:
+  Full case details including name, severity, status, assignee, overview, detectionCount, createdAt, updatedAt.`,
+      inputSchema: {
+        case_id: z.string().uuid().describe("Case ID to retrieve"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ case_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest<SophosCase>(
+        resolvedTenantId,
+        `/cases/v1/cases/${case_id}`
+      );
+      return jsonResult(formatCase(data));
+    })
+  );
+
+  // --- Create Case ---
+  server.registerTool(
+    "sophos_create_case",
+    {
+      title: "Create Sophos Case",
+      description: `Create a new self-managed investigation case in Sophos Central.
+
+Only self-managed cases can be created via the API.
+
+Args:
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - name (string): Case name.
+  - severity (string): Case severity: "informational", "low", "medium", "high", "critical".
+  - status (string): Initial status: "new" or "investigating".
+  - initial_detection_id (string): ID of the detection that triggered this case.
+  - assignee (string, optional): Email address of the assignee.
+  - overview (string, optional): Case overview/description.
+
+Returns:
+  The created case object.`,
+      inputSchema: {
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+        name: z.string().describe("Case name"),
+        severity: z
+          .enum(["informational", "low", "medium", "high", "critical"])
+          .describe("Case severity"),
+        status: z
+          .enum(["new", "investigating"])
+          .describe("Initial case status"),
+        initial_detection_id: z
+          .string()
+          .uuid()
+          .describe("ID of the detection that triggered this case"),
+        assignee: z
+          .string()
+          .email()
+          .optional()
+          .describe("Email address of the assignee"),
+        overview: z
+          .string()
+          .optional()
+          .describe("Case overview/description"),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(
+      async ({ tenant_id, name, severity, status, initial_detection_id, assignee, overview }) => {
+        const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+        const body: Record<string, unknown> = {
+          type: "investigation",
+          name,
+          severity,
+          status,
+          initialDetectionId: initial_detection_id,
+        };
+        if (assignee) body.assignee = assignee;
+        if (overview) body.overview = overview;
+
+        const data = await client.tenantRequest<SophosCase>(
+          resolvedTenantId,
+          "/cases/v1/cases",
+          { method: "POST", body }
+        );
+        return jsonResult(formatCase(data));
+      }
+    )
+  );
+
+  // --- Update Case ---
+  server.registerTool(
+    "sophos_update_case",
+    {
+      title: "Update Sophos Case",
+      description: `Update an existing self-managed case in Sophos Central.
+
+Only self-managed cases can be updated via the API. Supply only the fields to change.
+
+Args:
+  - case_id (string): The case ID to update.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - name (string, optional): New case name.
+  - severity (string, optional): New severity: "informational", "low", "medium", "high", "critical".
+  - status (string, optional): New status: "new", "investigating", "closed".
+  - assignee (string, optional): Email address of the new assignee.
+  - overview (string, optional): Updated case overview.
+
+Returns:
+  The updated case object.`,
+      inputSchema: {
+        case_id: z.string().uuid().describe("Case ID to update"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+        name: z.string().optional().describe("New case name"),
+        severity: z
+          .enum(["informational", "low", "medium", "high", "critical"])
+          .optional()
+          .describe("New severity"),
+        status: z
+          .enum(["new", "investigating", "closed"])
+          .optional()
+          .describe("New status"),
+        assignee: z
+          .string()
+          .email()
+          .optional()
+          .describe("Email address of the new assignee"),
+        overview: z.string().optional().describe("Updated case overview"),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(
+      async ({ case_id, tenant_id, name, severity, status, assignee, overview }) => {
+        const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+        const body: Record<string, unknown> = {};
+        if (name !== undefined) body.name = name;
+        if (severity !== undefined) body.severity = severity;
+        if (status !== undefined) body.status = status;
+        if (assignee !== undefined) body.assignee = assignee;
+        if (overview !== undefined) body.overview = overview;
+
+        const data = await client.tenantRequest<SophosCase>(
+          resolvedTenantId,
+          `/cases/v1/cases/${case_id}`,
+          { method: "PATCH", body }
+        );
+        return jsonResult(formatCase(data));
+      }
+    )
+  );
+
+  // --- List Case Detections ---
+  server.registerTool(
+    "sophos_list_case_detections",
+    {
+      title: "List Sophos Case Detections",
+      description: `List the detections associated with a specific Sophos Central case.
+
+Args:
+  - case_id (string): The case ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - limit (number, optional): Results per page (1-50, default 50).
+  - page (number, optional): Page number (default 1).
+
+Returns:
+  Paginated list of detections: id, attackType, detectionRule, severity, sensorGeneratedAt, device, sensor.`,
+      inputSchema: {
+        case_id: z.string().uuid().describe("Case ID to list detections for"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(CASES_MAX_PAGE_SIZE)
+          .optional()
+          .default(CASES_MAX_PAGE_SIZE)
+          .describe("Results per page (max 50)"),
+        page: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .default(1)
+          .describe("Page number (default 1)"),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ case_id, tenant_id, limit, page }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest<SophosCaseDetectionPage>(
+        resolvedTenantId,
+        `/cases/v1/cases/${case_id}/detections`,
+        {
+          params: {
+            pageSize: String(limit),
+            page: String(page),
+          },
+        }
+      );
+      return jsonResult({
+        case_id,
+        total: data.pages.total ?? data.pages.items ?? data.items.length,
+        page: data.pages.current ?? page,
+        page_size: data.pages.size,
+        detections: data.items,
+      });
+    })
+  );
+
+  // --- Get Case MITRE ATT&CK Summary ---
+  server.registerTool(
+    "sophos_get_case_mitre_summary",
+    {
+      title: "Get Case MITRE ATT&CK Summary",
+      description: `Get the MITRE ATT&CK tactics and techniques summary for a Sophos Central case.
+
+Provides a breakdown of ATT&CK tactics observed in the case detections, with associated techniques and counts.
+
+Args:
+  - case_id (string): The case ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+
+Returns:
+  MITRE ATT&CK summary with tactics, techniques, and detection counts.`,
+      inputSchema: {
+        case_id: z.string().uuid().describe("Case ID to get MITRE summary for"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ case_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest<SophosCaseMitreSummary>(
+        resolvedTenantId,
+        `/cases/v1/cases/${case_id}/mitre-attack-summary`
+      );
+      return jsonResult({ case_id, mitre_attack_summary: data });
+    })
+  );
+}
+
+function formatCase(c: SophosCase) {
+  return {
+    id: c.id,
+    name: c.name,
+    type: c.type,
+    severity: c.severity,
+    status: c.status,
+    assignee: c.assignee ?? null,
+    overview: c.overview ?? null,
+    managed_by: c.managedBy ?? null,
+    detection_count: c.detectionCount ?? null,
+    tenant_id: c.tenant.id,
+    created_at: c.createdAt,
+    created_by: c.createdBy ?? null,
+    updated_at: c.updatedAt ?? null,
+    initial_detection_id: c.initialDetection?.id ?? null,
+  };
+}

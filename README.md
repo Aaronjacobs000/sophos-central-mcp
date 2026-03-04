@@ -128,6 +128,60 @@ TRANSPORT=http
 | `sophos_add_blocked_item` | Block an item by SHA256, path, or certificate signer |
 | `sophos_delete_blocked_item` | Remove a blocked item |
 
+### Investigation
+
+#### Cases
+
+| Tool | Description |
+|------|-------------|
+| `sophos_list_cases` | List investigation cases with pagination |
+| `sophos_get_case` | Get full case details |
+| `sophos_create_case` | Create a new self-managed investigation case |
+| `sophos_update_case` | Update case status, severity, assignee, or overview |
+| `sophos_list_case_detections` | List detections linked to a case |
+| `sophos_get_case_mitre_summary` | Get MITRE ATT&CK tactic/technique breakdown for a case |
+
+#### Detections
+
+Async API — start a query, poll for completion, then fetch results.
+
+| Tool | Description |
+|------|-------------|
+| `sophos_run_detections_query` | Start an async query for individual XDR/EDR detections |
+| `sophos_get_detections_run` | Poll the status of a detections query run |
+| `sophos_get_detections_results` | Fetch results from a completed detections query |
+| `sophos_run_detection_groups_query` | Start an async query for grouped detections |
+| `sophos_get_detection_groups_run` | Poll the status of a detection groups query run |
+| `sophos_get_detection_groups_results` | Fetch results from a completed detection groups query |
+
+#### SIEM Events
+
+| Tool | Description |
+|------|-------------|
+| `sophos_list_siem_events` | Stream security events via cursor-based pagination (last 24h) |
+| `sophos_list_siem_alerts` | Stream security alerts via cursor-based pagination (last 24h) |
+
+#### XDR Data Lake
+
+Async API — submit a SQL query against historical telemetry, poll for completion, then fetch results.
+
+| Tool | Description |
+|------|-------------|
+| `sophos_run_xdr_query` | Start an async SQL query against the Sophos Data Lake |
+| `sophos_get_xdr_query_run` | Poll the status of an XDR query run |
+| `sophos_get_xdr_query_results` | Fetch paginated results from a completed XDR query |
+
+#### Live Discover
+
+Async API — run OSquery SQL on live endpoints in real time. Rate limited to 10 runs/minute, 500/day.
+
+| Tool | Description |
+|------|-------------|
+| `sophos_list_live_discover_queries` | List available saved OSquery queries |
+| `sophos_run_live_discover_query` | Run a saved or ad hoc OSquery against live endpoints |
+| `sophos_get_live_discover_run` | Poll the status of a Live Discover query run |
+| `sophos_get_live_discover_results` | Fetch paginated results from a completed Live Discover run |
+
 ### Tenant context
 
 For **partner/org** callers, every tenant-scoped tool requires a `tenant_id` parameter. Use `sophos_list_tenants` first to discover available tenant IDs.
@@ -178,13 +232,14 @@ src/
 │   ├── directory.ts          # sophos_list_users, list_admins, list_roles
 │   ├── policies.ts           # sophos_list/get/clone/update_policy
 │   ├── groups.ts             # sophos_list/get/create/update/delete_endpoint_group, add/remove endpoints
-│   └── exclusions.ts         # sophos_list/add/delete exclusions, allowed items, blocked items
+│   ├── exclusions.ts         # sophos_list/add/delete exclusions, allowed items, blocked items
+│   ├── cases.ts              # sophos_list/get/create/update_case, list_case_detections, mitre_summary
+│   ├── detections.ts         # sophos_run/get/results for detections and detection-groups
+│   ├── siem.ts               # sophos_list_siem_events, sophos_list_siem_alerts
+│   ├── xdr.ts                # sophos_run/get/results for XDR Data Lake queries
+│   └── live-discover.ts      # sophos_list_queries, run/get/results for Live Discover
 └── types/sophos.ts           # Sophos API response types
 ```
-
-## Roadmap
-
-- **Phase 3 (Investigation)**: XDR Data Lake queries, Live Discover, detections, cases, SIEM events
 
 ## Security
 
