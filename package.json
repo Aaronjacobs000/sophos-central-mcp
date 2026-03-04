@@ -1,6 +1,6 @@
 {
   "name": "sophos-central-mcp-server",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "MCP server for Sophos Central API - SOC monitoring, endpoint management, admin automation, and XDR investigation",
   "type": "module",
   "main": "dist/index.js",

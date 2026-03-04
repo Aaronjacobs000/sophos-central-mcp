@@ -105,7 +105,7 @@ Args:
 Returns:
   Full case details including name, severity, status, assignee, overview, detectionCount, createdAt, updatedAt.`,
       inputSchema: {
-        case_id: z.string().uuid().describe("Case ID to retrieve"),
+        case_id: z.string().describe("Case ID to retrieve (e.g. '1-598868')"),
         tenant_id: z
           .string()
           .uuid()
@@ -164,7 +164,6 @@ Returns:
           .describe("Initial case status"),
         initial_detection_id: z
           .string()
-          .uuid()
           .describe("ID of the detection that triggered this case"),
         assignee: z
           .string()
@@ -227,7 +226,7 @@ Args:
 Returns:
   The updated case object.`,
       inputSchema: {
-        case_id: z.string().uuid().describe("Case ID to update"),
+        case_id: z.string().describe("Case ID to update (e.g. '1-598868')"),
         tenant_id: z
           .string()
           .uuid()
@@ -292,7 +291,7 @@ Args:
 Returns:
   Paginated list of detections: id, attackType, detectionRule, severity, sensorGeneratedAt, device, sensor.`,
       inputSchema: {
-        case_id: z.string().uuid().describe("Case ID to list detections for"),
+        case_id: z.string().describe("Case ID to list detections for (e.g. '1-598868')"),
         tenant_id: z
           .string()
           .uuid()
@@ -359,7 +358,7 @@ Args:
 Returns:
   MITRE ATT&CK summary with tactics, techniques, and detection counts.`,
       inputSchema: {
-        case_id: z.string().uuid().describe("Case ID to get MITRE summary for"),
+        case_id: z.string().describe("Case ID to get MITRE summary for (e.g. '1-598868')"),
         tenant_id: z
           .string()
           .uuid()

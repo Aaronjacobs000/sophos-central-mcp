@@ -55,7 +55,7 @@ async function main(): Promise<void> {
   // Create the MCP server
   const server = new McpServer({
     name: "sophos-central-mcp-server",
-    version: "0.1.7",
+    version: "0.1.8",
   });
 
   // Register tools based on identity type
