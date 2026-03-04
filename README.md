@@ -90,6 +90,7 @@ TRANSPORT=http
 |------|-------------|
 | `sophos_list_tenants` | List managed tenants (partner/org only) |
 | `sophos_list_account_health` | Bulk health scores across all tenants, ranked worst-first (partner/org only) |
+| `sophos_partner_gap_analysis` | Security gap and upsell opportunity analysis across all tenants — compact, actionable summary sorted by most opportunities first (partner/org only) |
 | `sophos_list_alerts` | List alerts with severity/category/product/date filters |
 | `sophos_get_alert` | Get full alert detail with allowed actions |
 | `sophos_acknowledge_alert` | Mark an alert as reviewed |
