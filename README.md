@@ -45,6 +45,7 @@ claude mcp add sophos-central \
 
 - **Universal caller support**: Works with partner, organisation, and tenant-level API credentials
 - **Multi-tenant**: Partner/org callers can query across all managed tenants
+- **Partner gap analysis**: Single-call sales opportunity report across all managed tenants — fetches health data in parallel and returns a compact ranked list of security gaps per customer
 - **Auto region routing**: Discovers tenant data regions via `/whoami/v1` and routes requests to the correct regional API host
 - **Token lifecycle**: Automatic OAuth2 token refresh before expiry
 - **Rate limit handling**: Retry with backoff on 429 responses
@@ -84,13 +85,75 @@ TRANSPORT=http
 
 ## Tools
 
+### Partner Sales & Advisory
+
+> These tools are only available with **partner or organisation-level** credentials. They operate across all managed tenants in a single call.
+
+| Tool | Description |
+|------|-------------|
+| `sophos_list_tenants` | List all managed tenants with IDs, names, and data regions |
+| `sophos_list_account_health` | Bulk health scores for all tenants, ranked worst-first |
+| `sophos_partner_gap_analysis` | Security gap and upsell opportunity report across all tenants |
+
+#### `sophos_partner_gap_analysis` — detail
+
+Fetches account health for every managed tenant in parallel and distils the results into a compact, ranked list of security gaps — designed for partner sales and advisory conversations. A single call covers the entire managed estate.
+
+**Parameters**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `protection_threshold` | integer (1–100) | `80` | Flag tenants whose protection score is below this percentage |
+| `flag_missing_server_protection` | boolean | `false` | Include tenants with no server protection enrolled as an upsell opportunity. Off by default to reduce noise for SMB-heavy partners |
+| `limit` | integer | all | Return only the top N tenants by gap count |
+
+**Gaps detected**
+
+| Gap type | Meaning |
+|----------|---------|
+| `no_products_enrolled` | No Sophos products enrolled or no endpoints reporting health data |
+| `low_computer_protection` | Computer protection score below the configured threshold |
+| `low_server_protection` | Server protection score below the configured threshold |
+| `tamper_protection_partial` | Tamper protection not enabled on all computers |
+| `tamper_protection_partial_servers` | Tamper protection not enabled on all servers |
+| `policy_non_compliance` | Computer policy compliance below 100% |
+| `policy_non_compliance_servers` | Server policy compliance below 100% |
+| `no_server_protection` | Server protection not enrolled (only when `flag_missing_server_protection=true`) |
+
+**Response shape**
+
+```json
+{
+  "summary": {
+    "total_tenants": 137,
+    "tenants_with_gaps": 42,
+    "tenants_with_errors": 1,
+    "tenants_no_issues": 94,
+    "protection_threshold_used": 80,
+    "gap_type_breakdown": [
+      { "type": "tamper_protection_partial", "affected_tenants": 28 },
+      { "type": "low_computer_protection",   "affected_tenants": 14 }
+    ]
+  },
+  "tenants_with_gaps": [
+    {
+      "tenant_id": "...",
+      "tenant_name": "Acme Corp",
+      "gap_count": 3,
+      "gaps": [
+        { "type": "low_computer_protection", "detail": "Computer protection at 62% (below 80% threshold)", "score": 62 },
+        { "type": "tamper_protection_partial", "detail": "Tamper protection enabled on only 50% of computers", "score": 50 },
+        { "type": "policy_non_compliance", "detail": "Computer policy compliance at 75%", "score": 75 }
+      ]
+    }
+  ]
+}
+```
+
 ### SOC Monitoring
 
 | Tool | Description |
 |------|-------------|
-| `sophos_list_tenants` | List managed tenants (partner/org only) |
-| `sophos_list_account_health` | Bulk health scores across all tenants, ranked worst-first (partner/org only) |
-| `sophos_partner_gap_analysis` | Security gap and upsell opportunity analysis across all tenants — compact, actionable summary sorted by most opportunities first (partner/org only) |
 | `sophos_list_alerts` | List alerts with severity/category/product/date filters |
 | `sophos_get_alert` | Get full alert detail with allowed actions |
 | `sophos_acknowledge_alert` | Mark an alert as reviewed |
@@ -226,10 +289,10 @@ src/
 │   └── tenant-resolver.ts    # Whoami + tenant cache
 ├── tools/
 │   ├── helpers.ts            # Shared response formatting
-│   ├── tenants.ts            # sophos_list_tenants, sophos_list_account_health
+│   ├── tenants.ts            # sophos_list_tenants
 │   ├── alerts.ts             # sophos_list_alerts, get, acknowledge
 │   ├── endpoints.ts          # sophos_list/get/scan/isolate/release
-│   ├── health.ts             # sophos_get_account_health
+│   ├── health.ts             # sophos_get_account_health, sophos_list_account_health, sophos_partner_gap_analysis
 │   ├── directory.ts          # sophos_list_users, list_admins, list_roles
 │   ├── policies.ts           # sophos_list/get/clone/update_policy
 │   ├── groups.ts             # sophos_list/get/create/update/delete_endpoint_group, add/remove endpoints
