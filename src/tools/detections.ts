@@ -307,13 +307,19 @@ Returns:
         resolvedTenantId,
         `/detections/v1/queries/detection-groups/${run_id}`
       );
+      const ready = run.status === "finished" && run.result === "succeeded";
+      const failed = run.status === "finished" && run.result === "failed";
       return jsonResult({
         run_id: run.id,
         status: run.status,
         result: run.result,
         created_at: run.createdAt,
         finished_at: run.finishedAt ?? null,
-        ready: run.status === "finished" && run.result === "succeeded",
+        ready,
+        ...(failed && {
+          message:
+            "No grouped detections found for the queried time period. This is expected for tenants with no detection groups. Try sophos_run_detections_query instead to query individual detections.",
+        }),
       });
     })
   );

@@ -82,11 +82,24 @@ Example SQL:
       if (from_date) body.from = from_date;
       if (to_date) body.to = to_date;
 
-      const run = await client.tenantRequest<SophosQueryRun>(
-        resolvedTenantId,
-        "/xdr-query/v1/queries/runs",
-        { method: "POST", body }
-      );
+      let run: SophosQueryRun;
+      try {
+        run = await client.tenantRequest<SophosQueryRun>(
+          resolvedTenantId,
+          "/xdr-query/v1/queries/runs",
+          { method: "POST", body }
+        );
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        if (msg.includes("Data conversion failed")) {
+          return jsonResult({
+            error: "xdr_not_available",
+            message:
+              "XDR Data Lake query is not available for this tenant. The tenant likely does not have XDR data lake ingestion active. An XDR or MTR licence with data lake ingestion enabled is required.",
+          });
+        }
+        throw error;
+      }
       return jsonResult({
         run_id: run.id,
         status: run.status,
