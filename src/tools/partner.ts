@@ -653,16 +653,36 @@ Returns:
       description: `Get billing usage for a specific month.
 
 Returns billing usage data across all managed tenants for the given year and month.
+Supports pagination and optional tenant filtering.
 
 Args:
   - year (number): The year (e.g. 2026).
   - month (number): The month (1-12).
+  - tenant_id (string, optional): Filter to a specific tenant ID.
+  - page_size (number, optional): Items per page (default 50).
+  - cursor (string, optional): Pagination cursor from a previous response.
 
 Returns:
   Billing usage details for the specified month.`,
       inputSchema: {
         year: z.number().int().min(2000).max(2100).describe("Year (e.g. 2026)"),
         month: z.number().int().min(1).max(12).describe("Month (1-12)"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Filter to a specific tenant ID"),
+        page_size: z
+          .number()
+          .int()
+          .min(1)
+          .max(1000)
+          .optional()
+          .describe("Items per page (default 50)"),
+        cursor: z
+          .string()
+          .optional()
+          .describe("Pagination cursor from a previous response"),
       },
       annotations: {
         readOnlyHint: true,
@@ -671,9 +691,15 @@ Returns:
         openWorldHint: true,
       },
     },
-    withErrorHandling(async ({ year, month }) => {
+    withErrorHandling(async ({ year, month, tenant_id, page_size, cursor }) => {
+      const params: Record<string, string> = { pageTotal: "true" };
+      if (tenant_id) params.tenantId = tenant_id;
+      if (page_size) params.pageSize = String(page_size);
+      if (cursor) params.cursor = cursor;
+
       const data = await client.globalRequest<Record<string, unknown>>(
-        `/partner/v1/billing/usage/${year}/${month}`
+        `/partner/v1/billing/usage/${year}/${month}`,
+        { params }
       );
 
       return jsonResult(data);
