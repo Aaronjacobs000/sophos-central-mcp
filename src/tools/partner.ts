@@ -649,26 +649,20 @@ Returns:
   server.registerTool(
     "sophos_get_billing_usage",
     {
-      title: "Get Billing Usage Summary",
-      description: `Get billing usage summary for the partner/organization account.
+      title: "Get Billing Usage",
+      description: `Get billing usage for a specific month.
 
-Returns aggregated billing usage data across all managed tenants.
+Returns billing usage data across all managed tenants for the given year and month.
 
 Args:
-  - from_date (string, optional): Start date for the usage period (ISO 8601 format, e.g. "2026-01-01").
-  - to_date (string, optional): End date for the usage period (ISO 8601 format, e.g. "2026-01-31").
+  - year (number): The year (e.g. 2026).
+  - month (number): The month (1-12).
 
 Returns:
-  Billing usage summary.`,
+  Billing usage details for the specified month.`,
       inputSchema: {
-        from_date: z
-          .string()
-          .optional()
-          .describe('Start date (ISO 8601, e.g. "2026-01-01")'),
-        to_date: z
-          .string()
-          .optional()
-          .describe('End date (ISO 8601, e.g. "2026-01-31")'),
+        year: z.number().int().min(2000).max(2100).describe("Year (e.g. 2026)"),
+        month: z.number().int().min(1).max(12).describe("Month (1-12)"),
       },
       annotations: {
         readOnlyHint: true,
@@ -677,14 +671,9 @@ Returns:
         openWorldHint: true,
       },
     },
-    withErrorHandling(async ({ from_date, to_date }) => {
-      const params: Record<string, string> = {};
-      if (from_date) params.fromDate = from_date;
-      if (to_date) params.toDate = to_date;
-
+    withErrorHandling(async ({ year, month }) => {
       const data = await client.globalRequest<Record<string, unknown>>(
-        "/partner/v1/billing/usage",
-        { params }
+        `/partner/v1/billing/usage/${year}/${month}`
       );
 
       return jsonResult(data);

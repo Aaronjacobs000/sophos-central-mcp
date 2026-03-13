@@ -3,8 +3,7 @@
  *        sophos_list_admin_role_assignments, sophos_add_admin_role_assignment,
  *        sophos_delete_admin_role_assignment, sophos_get_admin_role_assignment,
  *        sophos_create_role, sophos_get_role, sophos_update_role, sophos_delete_role,
- *        sophos_list_permission_sets, sophos_list_admin_authenticators,
- *        sophos_reset_admin_password
+ *        sophos_list_permission_sets, sophos_reset_admin_password
  * Interact with the Sophos Common API for admin and role management.
  */
 
@@ -566,48 +565,6 @@ Returns:
       return jsonResult({
         total: data.pages?.total ?? data.pages?.items ?? items.length,
         permission_sets: items,
-      });
-    })
-  );
-
-  // --- List Admin Authenticators ---
-  server.registerTool(
-    "sophos_list_admin_authenticators",
-    {
-      title: "List Admin Authenticators",
-      description: `List authenticators (MFA methods, login methods) for a specific administrator.
-
-Args:
-  - admin_id (string): Admin ID.
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
-
-Returns:
-  List of authenticators configured for the admin.`,
-      inputSchema: {
-        admin_id: z.string().uuid().describe("Admin ID"),
-        tenant_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe("Tenant ID. Required for partner/org callers."),
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ admin_id, tenant_id }) => {
-      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
-      const data = await client.tenantRequest<
-        SophosPagedResponse<Record<string, unknown>>
-      >(resolvedTenantId, `/common/v1/admins/${admin_id}/authenticators`);
-
-      const items = data.items ?? [];
-      return jsonResult({
-        total: data.pages?.total ?? data.pages?.items ?? items.length,
-        authenticators: items,
       });
     })
   );

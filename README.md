@@ -1,6 +1,6 @@
 # Sophos Central MCP Server
 
-MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Supports partner, organisation, and single-tenant credential types with automatic region routing. **266 tools** covering 14 Sophos API namespaces.
+MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Supports partner, organisation, and single-tenant credential types with automatic region routing. **265 tools** covering 14 Sophos API namespaces.
 
 ## Quick Start
 
@@ -50,7 +50,7 @@ claude mcp add sophos-central \
 - **Token lifecycle**: Automatic OAuth2 token refresh before expiry
 - **Rate limit handling**: Retry with backoff on 429 responses
 - **Dual transport**: Streamable HTTP (for Claude Desktop / Claude Code) or stdio
-- **Full API coverage**: 266 tools across endpoints, alerts, policies, firewalls, email, mobile, XDR, cases, SIEM, and more
+- **Full API coverage**: 265 tools across endpoints, alerts, policies, firewalls, email, mobile, XDR, cases, SIEM, and more
 
 ## Prerequisites
 
@@ -109,7 +109,7 @@ TRANSPORT=http
 | `sophos_list_partner_admin_role_assignments` | List admin role assignments |
 | `sophos_add_partner_admin_role_assignment` | Add role assignment to admin |
 | `sophos_delete_partner_admin_role_assignment` | Remove role assignment |
-| `sophos_get_billing_usage` | Get billing usage summary |
+| `sophos_get_billing_usage` | Get billing usage for a specific month |
 
 ### Alerts (4 tools)
 
@@ -259,7 +259,7 @@ TRANSPORT=http
 | `sophos_list_admins` | List admin accounts and roles |
 | `sophos_list_roles` | List available admin roles |
 
-### Admin Management (14 tools)
+### Admin Management (13 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -275,7 +275,6 @@ TRANSPORT=http
 | `sophos_update_role` | Update a role |
 | `sophos_delete_role` | Delete a role |
 | `sophos_list_permission_sets` | List available permission sets |
-| `sophos_list_admin_authenticators` | List admin's authenticators |
 | `sophos_reset_admin_password` | Reset an admin's password |
 
 ### Cases (9 tools)
