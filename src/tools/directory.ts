@@ -1,7 +1,7 @@
 /**
  * Tools: sophos_list_users, sophos_list_admins, sophos_list_roles,
  *        sophos_get_user, sophos_create_user, sophos_update_user, sophos_delete_user,
- *        sophos_list_user_endpoints, sophos_list_user_groups, sophos_get_user_group,
+ *        sophos_list_user_groups, sophos_get_user_group,
  *        sophos_create_user_group, sophos_update_user_group, sophos_delete_user_group,
  *        sophos_list_user_group_members, sophos_add_users_to_group,
  *        sophos_remove_user_from_group, sophos_list_user_group_endpoints,
@@ -490,74 +490,6 @@ Args:
         status: "deleted",
         user_id,
         message: `User ${user_id} has been deleted.`,
-      });
-    })
-  );
-
-  // --- List User Endpoints ---
-  server.registerTool(
-    "sophos_list_user_endpoints",
-    {
-      title: "List Endpoints for Sophos User",
-      description: `List endpoints (devices) associated with a specific directory user.
-
-Args:
-  - user_id (string): User ID.
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
-  - limit (number, optional): Max results per page (default 50).
-  - page (number, optional): Page number (default 1).
-
-Returns:
-  Paginated list of endpoints associated with the user.`,
-      inputSchema: {
-        user_id: z.string().uuid().describe("User ID"),
-        tenant_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe("Tenant ID. Required for partner/org callers."),
-        limit: z
-          .number()
-          .int()
-          .min(1)
-          .max(100)
-          .optional()
-          .default(DEFAULT_PAGE_SIZE)
-          .describe("Max results per page (default 50)"),
-        page: z
-          .number()
-          .int()
-          .min(1)
-          .optional()
-          .default(1)
-          .describe("Page number (default 1)"),
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ user_id, tenant_id, limit, page }) => {
-      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
-
-      const params: Record<string, string> = {
-        pageSize: String(limit),
-        page: String(page),
-      };
-
-      const data = await client.tenantRequest<
-        SophosPagedResponse<Record<string, unknown>>
-      >(resolvedTenantId, `/common/v1/directory/users/${user_id}/endpoints`, {
-        params,
-      });
-
-      const items = data.items ?? [];
-      return jsonResult({
-        total: data.pages?.total ?? data.pages?.items ?? items.length,
-        page: data.pages?.current ?? page,
-        endpoints: items,
       });
     })
   );

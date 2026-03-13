@@ -324,15 +324,17 @@ Returns:
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
 
       const data = await client.tenantRequest<
-        SophosPagedResponse<Record<string, unknown>>
+        Record<string, unknown>
       >(resolvedTenantId, "/endpoint/v1/software/packages/recommended", {
         params: { pageSize: String(limit), page: String(page) },
       });
 
+      const items = (data as { items?: Record<string, unknown>[] }).items ?? [];
+      const pages = (data as { pages?: { total?: number; current?: number; items?: number } }).pages;
       return jsonResult({
-        total: data.pages.total ?? data.pages.items ?? data.items.length,
-        page: data.pages.current ?? page,
-        packages: data.items,
+        total: pages?.total ?? pages?.items ?? items.length,
+        page: pages?.current ?? page,
+        packages: items,
       });
     })
   );
@@ -386,15 +388,17 @@ Returns:
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
 
       const data = await client.tenantRequest<
-        SophosPagedResponse<Record<string, unknown>>
+        Record<string, unknown>
       >(resolvedTenantId, "/endpoint/v1/software/packages/static", {
         params: { pageSize: String(limit), page: String(page) },
       });
 
+      const items = (data as { items?: Record<string, unknown>[] }).items ?? [];
+      const pages = (data as { pages?: { total?: number; current?: number; items?: number } }).pages;
       return jsonResult({
-        total: data.pages.total ?? data.pages.items ?? data.items.length,
-        page: data.pages.current ?? page,
-        packages: data.items,
+        total: pages?.total ?? pages?.items ?? items.length,
+        page: pages?.current ?? page,
+        packages: items,
       });
     })
   );

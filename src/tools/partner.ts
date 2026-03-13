@@ -8,7 +8,7 @@
  *        sophos_list_partner_admin_role_assignments,
  *        sophos_add_partner_admin_role_assignment,
  *        sophos_delete_partner_admin_role_assignment,
- *        sophos_get_billing_usage, sophos_list_billing_usage_by_tenant
+ *        sophos_get_billing_usage
  * Partner/organization-level tools using globalRequest.
  */
 
@@ -691,61 +691,4 @@ Returns:
     })
   );
 
-  server.registerTool(
-    "sophos_list_billing_usage_by_tenant",
-    {
-      title: "List Billing Usage by Tenant",
-      description: `Get per-tenant billing usage breakdown.
-
-Returns billing usage data broken down by individual managed tenant.
-
-Args:
-  - limit (number, optional): Max results per page (default 50).
-  - page (number, optional): Page number (default 1).
-
-Returns:
-  Paginated list of per-tenant billing usage.`,
-      inputSchema: {
-        limit: z
-          .number()
-          .int()
-          .min(1)
-          .max(100)
-          .optional()
-          .default(DEFAULT_PAGE_SIZE)
-          .describe("Max results per page (default 50)"),
-        page: z
-          .number()
-          .int()
-          .min(1)
-          .optional()
-          .default(1)
-          .describe("Page number (default 1)"),
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ limit, page }) => {
-      const params: Record<string, string> = {
-        pageSize: String(limit),
-        page: String(page),
-      };
-
-      const data = await client.globalRequest<{
-        items?: Record<string, unknown>[];
-        pages?: { current?: number; total?: number; items?: number };
-      }>("/partner/v1/billing/usage/tenants", { params });
-
-      const items = data.items ?? [];
-      return jsonResult({
-        total: data.pages?.total ?? data.pages?.items ?? items.length,
-        page: data.pages?.current ?? page,
-        tenants: items,
-      });
-    })
-  );
 }

@@ -39,11 +39,8 @@ import { registerEmailTools } from "./tools/email.js";
 import { registerDnsProtectionTools } from "./tools/dns-protection.js";
 import { registerCloudSecurityTools } from "./tools/cloud-security.js";
 import { registerWifiTools } from "./tools/wifi.js";
-import { registerLicensingTools } from "./tools/licensing.js";
-import { registerAccountTools } from "./tools/accounts.js";
 import { registerUserActivityTools } from "./tools/user-activity.js";
 import { registerPartnerTools } from "./tools/partner.js";
-import { registerBusinessAutomationTools } from "./tools/business-automation.js";
 import { registerMobileTools } from "./tools/mobile.js";
 
 async function main(): Promise<void> {
@@ -69,7 +66,7 @@ async function main(): Promise<void> {
   // Create the MCP server
   const server = new McpServer({
     name: "sophos-central-mcp-server",
-    version: "0.2.0",
+    version: "0.2.1",
   });
 
   // Register tools based on identity type
@@ -79,7 +76,6 @@ async function main(): Promise<void> {
   if (identity.idType !== "tenant") {
     registerTenantTools(server, tenantResolver);
     registerPartnerTools(server, sophosClient, tenantResolver);
-    registerBusinessAutomationTools(server, sophosClient, tenantResolver);
   }
 
   // Phase 1: Tenant-scoped SOC monitoring tools
@@ -119,8 +115,6 @@ async function main(): Promise<void> {
   registerDnsProtectionTools(server, sophosClient, tenantResolver);
   registerCloudSecurityTools(server, sophosClient, tenantResolver);
   registerWifiTools(server, sophosClient, tenantResolver);
-  registerLicensingTools(server, sophosClient, tenantResolver);
-  registerAccountTools(server, sophosClient, tenantResolver);
   registerUserActivityTools(server, sophosClient, tenantResolver);
 
   // Phase 10: Mobile device management tools

@@ -1,6 +1,6 @@
 # Sophos Central MCP Server
 
-MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Supports partner, organisation, and single-tenant credential types with automatic region routing. **286 tools** covering 16 Sophos API namespaces.
+MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Supports partner, organisation, and single-tenant credential types with automatic region routing. **266 tools** covering 14 Sophos API namespaces.
 
 ## Quick Start
 
@@ -50,7 +50,7 @@ claude mcp add sophos-central \
 - **Token lifecycle**: Automatic OAuth2 token refresh before expiry
 - **Rate limit handling**: Retry with backoff on 429 responses
 - **Dual transport**: Streamable HTTP (for Claude Desktop / Claude Code) or stdio
-- **Full API coverage**: 286 tools across endpoints, alerts, policies, firewalls, email, mobile, XDR, cases, SIEM, and more
+- **Full API coverage**: 266 tools across endpoints, alerts, policies, firewalls, email, mobile, XDR, cases, SIEM, and more
 
 ## Prerequisites
 
@@ -86,7 +86,7 @@ TRANSPORT=http
 
 ## Tools
 
-### Partner & Organisation (19 tools)
+### Partner & Organisation (18 tools)
 
 > These tools are only available with **partner or organisation-level** credentials. They operate across all managed tenants.
 
@@ -110,15 +110,6 @@ TRANSPORT=http
 | `sophos_add_partner_admin_role_assignment` | Add role assignment to admin |
 | `sophos_delete_partner_admin_role_assignment` | Remove role assignment |
 | `sophos_get_billing_usage` | Get billing usage summary |
-| `sophos_list_billing_usage_by_tenant` | Per-tenant billing breakdown |
-
-#### Business Automation (partner only)
-
-| Tool | Description |
-|------|-------------|
-| `sophos_list_quotes` | List partner quotes |
-| `sophos_get_quote` | Get quote detail |
-| `sophos_get_partner_level` | Get current partner level/tier |
 
 ### Alerts (4 tools)
 
@@ -152,7 +143,7 @@ TRANSPORT=http
 | `sophos_bulk_isolate_endpoints` | Bulk isolate/release multiple endpoints |
 | `sophos_get_endpoint_isolation_status` | Get endpoint isolation status |
 
-### Endpoint Settings (38 tools)
+### Endpoint Settings (32 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -184,12 +175,6 @@ TRANSPORT=http
 | `sophos_list_isolation_exclusions` | List isolation exclusions |
 | `sophos_add_isolation_exclusion` | Add isolation exclusion |
 | `sophos_delete_isolation_exclusion` | Delete isolation exclusion |
-| `sophos_get_peripheral_settings` | Get peripheral control settings |
-| `sophos_update_peripheral_settings` | Update peripheral control settings |
-| `sophos_get_event_journal_settings` | Get event journal settings |
-| `sophos_update_event_journal_settings` | Update event journal settings |
-| `sophos_get_update_management_settings` | Get update management settings |
-| `sophos_update_update_management_settings` | Update update management settings |
 | `sophos_get_lockdown_settings` | Get server lockdown settings |
 | `sophos_update_lockdown_settings` | Update server lockdown settings |
 | `sophos_get_mtr_settings` | Get MDR/MTR settings |
@@ -244,18 +229,15 @@ TRANSPORT=http
 | `sophos_add_blocked_item` | Block an item by SHA256, path, or certificate |
 | `sophos_delete_blocked_item` | Remove a blocked item |
 
-### Account Health (6 tools)
+### Account Health (3 tools)
 
 | Tool | Description |
 |------|-------------|
 | `sophos_get_account_health` | Get tenant health check scores |
-| `sophos_get_regional_health_scores` | Get health scores by region |
-| `sophos_get_historical_health_scores` | Get historical health score trends |
-| `sophos_snooze_health_check` | Snooze a health check finding |
 | `sophos_list_account_health` | Bulk health scores for all tenants (partner/org only) |
 | `sophos_partner_gap_analysis` | Gap analysis across all tenants (partner/org only) |
 
-### Directory Users & Groups (18 tools)
+### Directory Users & Groups (17 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -264,7 +246,6 @@ TRANSPORT=http
 | `sophos_create_user` | Create a directory user |
 | `sophos_update_user` | Update a user |
 | `sophos_delete_user` | Delete a user |
-| `sophos_list_user_endpoints` | List endpoints for a user |
 | `sophos_list_user_groups` | List directory user groups |
 | `sophos_get_user_group` | Get user group detail |
 | `sophos_create_user_group` | Create a user group |
@@ -489,22 +470,6 @@ Async API — run OSquery SQL on live endpoints. Rate limited to 10 runs/minute,
 | `sophos_add_wifi_mac_filter` | Add a MAC filter entry |
 | `sophos_delete_wifi_mac_filter` | Delete a MAC filter entry |
 
-### Licensing (2 tools)
-
-| Tool | Description |
-|------|-------------|
-| `sophos_list_licenses` | List software licenses |
-| `sophos_list_firewall_licenses` | List firewall licenses |
-
-### API Accounts (4 tools)
-
-| Tool | Description |
-|------|-------------|
-| `sophos_list_api_credentials` | List API access credentials |
-| `sophos_create_api_credential` | Create an API credential |
-| `sophos_get_api_credential` | Get credential detail |
-| `sophos_delete_api_credential` | Delete an API credential |
-
 ### User Activity (2 tools)
 
 | Tool | Description |
@@ -557,7 +522,6 @@ src/
 │   ├── helpers.ts               # Shared response formatting
 │   ├── tenants.ts               # Tenant listing (partner/org only)
 │   ├── partner.ts               # Partner admin, roles, billing (partner/org only)
-│   ├── business-automation.ts   # Quotes, partner level (partner/org only)
 │   ├── alerts.ts                # Alert list, get, acknowledge, search
 │   ├── endpoints.ts             # Endpoint CRUD, scan, isolate, tamper, forensics
 │   ├── endpoint-settings.ts     # Installer, web control, exploit mitigation, IPS, etc.
@@ -579,8 +543,6 @@ src/
 │   ├── dns-protection.ts        # DNS locations
 │   ├── cloud-security.ts        # Cloud security profiles, assets
 │   ├── wifi.ts                  # Wi-Fi MAC filtering
-│   ├── licensing.ts             # License management
-│   ├── accounts.ts              # API credential management
 │   └── user-activity.ts         # User attestations
 └── types/sophos.ts              # Sophos API response types
 ```
