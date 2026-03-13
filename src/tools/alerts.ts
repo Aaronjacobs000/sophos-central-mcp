@@ -1,5 +1,5 @@
 /**
- * Tools: sophos_list_alerts, sophos_get_alert, sophos_acknowledge_alert
+ * Tools: sophos_list_alerts, sophos_get_alert, sophos_acknowledge_alert, sophos_search_alerts
  * Interact with the Sophos Common API /common/v1/alerts
  */
 
@@ -193,6 +193,57 @@ Args:
         status: "acknowledged",
         alert_id,
         message: `Alert ${alert_id} has been acknowledged.`,
+      });
+    })
+  );
+
+  // --- Search Alerts ---
+  server.registerTool(
+    "sophos_search_alerts",
+    {
+      title: "Search Sophos Alerts",
+      description: `Search alerts using the advanced search endpoint with structured filters.
+
+Supports filtering by IDs, fields, date ranges, and sorting. Use this for more
+complex alert queries that go beyond the simple list filters.
+
+Args:
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - filter (object, optional): Search filters. Can include fields like ids, severity, category, product, from, to.
+  - sort (array, optional): Sort criteria e.g. [{"field": "raisedAt", "direction": "desc"}].
+  - limit (number, optional): Max results (default 50).
+  - page (number, optional): Page number (default 1).`,
+      inputSchema: {
+        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
+        filter: z.record(z.unknown()).optional().describe("Search filters (ids, severity, category, product, from, to)"),
+        sort: z.array(z.object({
+          field: z.string().describe("Field to sort by"),
+          direction: z.enum(["asc", "desc"]).optional().describe("Sort direction"),
+        })).optional().describe("Sort criteria"),
+        limit: z.number().int().min(1).max(100).optional().default(DEFAULT_PAGE_SIZE).describe("Max results per page (default 50)"),
+        page: z.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    withErrorHandling(async ({ tenant_id, filter, sort, limit, page }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const body: Record<string, unknown> = {
+        pageSize: limit,
+        pageTotal: true,
+      };
+      if (filter) body.filter = filter;
+      if (sort) body.sort = sort;
+      if (page) body.page = page;
+
+      const data = await client.tenantRequest<SophosAlertPage>(
+        resolvedTenantId,
+        "/common/v1/alerts/search",
+        { method: "POST", body }
+      );
+      return jsonResult({
+        total: data.pages.total ?? data.pages.items ?? data.items.length,
+        page: data.pages.current ?? page,
+        alerts: data.items.map(formatAlert),
       });
     })
   );

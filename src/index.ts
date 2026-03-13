@@ -31,6 +31,20 @@ import { registerDetectionTools } from "./tools/detections.js";
 import { registerSiemTools } from "./tools/siem.js";
 import { registerXdrTools } from "./tools/xdr.js";
 import { registerLiveDiscoverTools } from "./tools/live-discover.js";
+import { registerAdminManagementTools } from "./tools/admin-management.js";
+import { registerEndpointMigrationTools } from "./tools/endpoint-migrations.js";
+import { registerEndpointSettingsTools } from "./tools/endpoint-settings.js";
+import { registerFirewallTools } from "./tools/firewall.js";
+import { registerEmailTools } from "./tools/email.js";
+import { registerDnsProtectionTools } from "./tools/dns-protection.js";
+import { registerCloudSecurityTools } from "./tools/cloud-security.js";
+import { registerWifiTools } from "./tools/wifi.js";
+import { registerLicensingTools } from "./tools/licensing.js";
+import { registerAccountTools } from "./tools/accounts.js";
+import { registerUserActivityTools } from "./tools/user-activity.js";
+import { registerPartnerTools } from "./tools/partner.js";
+import { registerBusinessAutomationTools } from "./tools/business-automation.js";
+import { registerMobileTools } from "./tools/mobile.js";
 
 async function main(): Promise<void> {
   // Load and validate config
@@ -55,15 +69,17 @@ async function main(): Promise<void> {
   // Create the MCP server
   const server = new McpServer({
     name: "sophos-central-mcp-server",
-    version: "0.1.10",
+    version: "0.2.0",
   });
 
   // Register tools based on identity type
   console.error(`[sophos-mcp] Registering tools for ${identity.idType} caller...`);
 
-  // Tenant listing only available for partner/org callers
+  // Partner/org-only tools
   if (identity.idType !== "tenant") {
     registerTenantTools(server, tenantResolver);
+    registerPartnerTools(server, sophosClient, tenantResolver);
+    registerBusinessAutomationTools(server, sophosClient, tenantResolver);
   }
 
   // Phase 1: Tenant-scoped SOC monitoring tools
@@ -83,6 +99,32 @@ async function main(): Promise<void> {
   registerSiemTools(server, sophosClient, tenantResolver);
   registerXdrTools(server, sophosClient, tenantResolver);
   registerLiveDiscoverTools(server, sophosClient, tenantResolver);
+
+  // Phase 4: Endpoint migration and software package tools
+  registerEndpointMigrationTools(server, sophosClient, tenantResolver);
+
+  // Phase 5: Endpoint settings tools
+  registerEndpointSettingsTools(server, sophosClient, tenantResolver);
+
+  // Phase 6: Firewall management tools
+  registerFirewallTools(server, sophosClient, tenantResolver);
+
+  // Phase 7: Admin management and directory user/group tools
+  registerAdminManagementTools(server, sophosClient, tenantResolver);
+
+  // Phase 8: Email protection tools
+  registerEmailTools(server, sophosClient, tenantResolver);
+
+  // Phase 9: DNS, cloud security, Wi-Fi, licensing, accounts, user activity
+  registerDnsProtectionTools(server, sophosClient, tenantResolver);
+  registerCloudSecurityTools(server, sophosClient, tenantResolver);
+  registerWifiTools(server, sophosClient, tenantResolver);
+  registerLicensingTools(server, sophosClient, tenantResolver);
+  registerAccountTools(server, sophosClient, tenantResolver);
+  registerUserActivityTools(server, sophosClient, tenantResolver);
+
+  // Phase 10: Mobile device management tools
+  registerMobileTools(server, sophosClient, tenantResolver);
 
   console.error("[sophos-mcp] All tools registered.");
 

@@ -194,6 +194,84 @@ Returns:
     })
   );
 
+  // --- Get Regional Health Scores ---
+  server.registerTool(
+    "sophos_get_regional_health_scores",
+    {
+      title: "Get Regional Health Scores",
+      description: `Get account health scores broken down by data region.
+
+Args:
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    withErrorHandling(async ({ tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest<Record<string, unknown>>(resolvedTenantId, "/account-health-check/v1/health-check/regional-scores");
+      return jsonResult(data);
+    })
+  );
+
+  // --- Get Historical Health Scores ---
+  server.registerTool(
+    "sophos_get_historical_health_scores",
+    {
+      title: "Get Historical Health Scores",
+      description: `Get historical account health scores showing trends over time.
+
+Args:
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - from_date (string, optional): ISO 8601 start date.
+  - to_date (string, optional): ISO 8601 end date.`,
+      inputSchema: {
+        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
+        from_date: z.string().optional().describe("ISO 8601 start date"),
+        to_date: z.string().optional().describe("ISO 8601 end date"),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    withErrorHandling(async ({ tenant_id, from_date, to_date }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const params: Record<string, string> = {};
+      if (from_date) params.from = from_date;
+      if (to_date) params.to = to_date;
+      const data = await client.tenantRequest<Record<string, unknown>>(resolvedTenantId, "/account-health-check/v1/health-check/historical-scores", { params });
+      return jsonResult(data);
+    })
+  );
+
+  // --- Snooze Health Check Finding ---
+  server.registerTool(
+    "sophos_snooze_health_check",
+    {
+      title: "Snooze Health Check Finding",
+      description: `Snooze a specific health check finding for a period of time.
+
+Args:
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - finding_id (string): The health check finding ID to snooze.
+  - duration_hours (number): Duration to snooze in hours.`,
+      inputSchema: {
+        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
+        finding_id: z.string().describe("Health check finding ID to snooze"),
+        duration_hours: z.number().int().min(1).describe("Duration to snooze in hours"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    withErrorHandling(async ({ tenant_id, finding_id, duration_hours }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest<Record<string, unknown>>(
+        resolvedTenantId,
+        "/account-health-check/v1/health-check/snooze",
+        { method: "POST", body: { findingId: finding_id, durationHours: duration_hours } }
+      );
+      return jsonResult({ status: "snoozed", finding_id, duration_hours, ...data });
+    })
+  );
+
   // Bulk tools: only useful for partner/org callers who manage multiple tenants
   if (tenantResolver.getIdentity().idType !== "tenant") {
     server.registerTool(

@@ -1,5 +1,6 @@
 /**
- * Tools: sophos_list_policies, sophos_get_policy, sophos_update_policy, sophos_clone_policy
+ * Tools: sophos_list_policies, sophos_get_policy, sophos_update_policy, sophos_clone_policy,
+ *        sophos_create_policy, sophos_delete_policy
  * Interact with the Sophos Endpoint API /endpoint/v1/policies
  */
 
@@ -278,6 +279,72 @@ Args:
         status: "cloned",
         policy: formatPolicy(created),
       });
+    })
+  );
+
+  // --- Create Policy ---
+  server.registerTool(
+    "sophos_create_policy",
+    {
+      title: "Create Sophos Policy",
+      description: `Create a new endpoint policy in Sophos Central.
+
+Args:
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - name (string): Policy name.
+  - type (string): Policy type e.g. "threat-protection", "peripheral-control", "web-control".
+  - enabled (boolean, optional): Whether the policy is enabled (default true).
+  - priority (number, optional): Policy priority (lower = higher priority).
+  - settings (object, optional): Policy settings object.`,
+      inputSchema: {
+        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
+        name: z.string().describe("Policy name"),
+        type: z.string().describe('Policy type e.g. "threat-protection", "peripheral-control", "web-control"'),
+        enabled: z.boolean().optional().describe("Whether the policy is enabled (default true)"),
+        priority: z.number().int().optional().describe("Policy priority (lower = higher priority)"),
+        settings: z.record(z.unknown()).optional().describe("Policy settings object"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    },
+    withErrorHandling(async ({ tenant_id, name, type, enabled, priority, settings }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const body: Record<string, unknown> = { name, type };
+      if (enabled !== undefined) body.enabled = enabled;
+      if (priority !== undefined) body.priority = priority;
+      if (settings !== undefined) body.settings = settings;
+
+      const created = await client.tenantRequest<SophosPolicy>(
+        resolvedTenantId,
+        "/endpoint/v1/policies",
+        { method: "POST", body }
+      );
+      return jsonResult({ status: "created", policy: formatPolicy(created) });
+    })
+  );
+
+  // --- Delete Policy ---
+  server.registerTool(
+    "sophos_delete_policy",
+    {
+      title: "Delete Sophos Policy",
+      description: `Delete an endpoint policy from Sophos Central.
+
+WARNING: This permanently removes the policy. Endpoints assigned to this policy will
+fall back to the next applicable policy in the priority chain.
+
+Args:
+  - policy_id (string): Policy ID to delete.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        policy_id: z.string().uuid().describe("Policy ID to delete"),
+        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+    },
+    withErrorHandling(async ({ policy_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      await client.tenantRequest(resolvedTenantId, `/endpoint/v1/policies/${policy_id}`, { method: "DELETE" });
+      return jsonResult({ status: "deleted", policy_id, message: `Policy ${policy_id} deleted.` });
     })
   );
 }

@@ -1,6 +1,13 @@
 /**
  * Tools: sophos_list_endpoints, sophos_get_endpoint, sophos_scan_endpoint,
- *        sophos_isolate_endpoint, sophos_release_endpoint
+ *        sophos_isolate_endpoint, sophos_release_endpoint,
+ *        sophos_delete_endpoint, sophos_bulk_delete_endpoints,
+ *        sophos_get_tamper_protection, sophos_toggle_tamper_protection,
+ *        sophos_get_adaptive_attack_protection, sophos_toggle_adaptive_attack_protection,
+ *        sophos_trigger_update_check, sophos_request_forensic_logs,
+ *        sophos_get_forensic_log_status, sophos_request_memory_dump,
+ *        sophos_get_memory_dump_status, sophos_bulk_isolate_endpoints,
+ *        sophos_get_endpoint_isolation_status
  * Interact with the Sophos Endpoint API /endpoint/v1/endpoints
  */
 
@@ -320,6 +327,583 @@ Args:
         endpoint_id,
         message: `Endpoint ${endpoint_id} has been released from isolation.`,
       });
+    })
+  );
+
+  // --- Delete Endpoint ---
+  server.registerTool(
+    "sophos_delete_endpoint",
+    {
+      title: "Delete Sophos Endpoint",
+      description: `Delete a specific endpoint from Sophos Central.
+
+WARNING: This permanently removes the endpoint record. The device will need
+to be re-registered if you want to manage it again.
+
+Args:
+  - endpoint_id (string): The endpoint ID to delete.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        endpoint_id: z.string().uuid().describe("Endpoint ID to delete"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ endpoint_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      await client.tenantRequest(
+        resolvedTenantId,
+        `/endpoint/v1/endpoints/${endpoint_id}`,
+        { method: "DELETE" }
+      );
+      return jsonResult({
+        status: "deleted",
+        endpoint_id,
+        message: `Endpoint ${endpoint_id} has been deleted from Sophos Central.`,
+      });
+    })
+  );
+
+  // --- Bulk Delete Endpoints ---
+  server.registerTool(
+    "sophos_bulk_delete_endpoints",
+    {
+      title: "Bulk Delete Sophos Endpoints",
+      description: `Bulk delete multiple endpoints from Sophos Central.
+
+WARNING: This permanently removes the endpoint records. The devices will need
+to be re-registered if you want to manage them again.
+
+Args:
+  - ids (string[]): Array of endpoint IDs to delete.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        ids: z
+          .array(z.string().uuid())
+          .min(1)
+          .describe("Array of endpoint IDs to delete"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ ids, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest(
+        resolvedTenantId,
+        "/endpoint/v1/endpoints/delete",
+        { method: "POST", body: { ids } }
+      );
+      return jsonResult(data);
+    })
+  );
+
+  // --- Get Tamper Protection ---
+  server.registerTool(
+    "sophos_get_tamper_protection",
+    {
+      title: "Get Tamper Protection Status",
+      description: `Get tamper protection status and password for a specific endpoint.
+
+Returns whether tamper protection is enabled and the tamper protection password
+needed to uninstall or reconfigure the agent locally.
+
+Args:
+  - endpoint_id (string): The endpoint ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        endpoint_id: z.string().uuid().describe("Endpoint ID"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ endpoint_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest(
+        resolvedTenantId,
+        `/endpoint/v1/endpoints/${endpoint_id}/tamper-protection`
+      );
+      return jsonResult(data);
+    })
+  );
+
+  // --- Toggle Tamper Protection ---
+  server.registerTool(
+    "sophos_toggle_tamper_protection",
+    {
+      title: "Toggle Tamper Protection",
+      description: `Enable or disable tamper protection on a specific endpoint.
+
+Tamper protection prevents users from uninstalling or reconfiguring the Sophos
+agent without the tamper protection password. Disabling this reduces security.
+
+Args:
+  - endpoint_id (string): The endpoint ID.
+  - enabled (boolean): Whether to enable or disable tamper protection.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        endpoint_id: z.string().uuid().describe("Endpoint ID"),
+        enabled: z
+          .boolean()
+          .describe("Whether to enable (true) or disable (false) tamper protection"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ endpoint_id, enabled, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest(
+        resolvedTenantId,
+        `/endpoint/v1/endpoints/${endpoint_id}/tamper-protection`,
+        { method: "POST", body: { enabled } }
+      );
+      return jsonResult(data);
+    })
+  );
+
+  // --- Get Adaptive Attack Protection ---
+  server.registerTool(
+    "sophos_get_adaptive_attack_protection",
+    {
+      title: "Get Adaptive Attack Protection Status",
+      description: `Get the Adaptive Attack Protection (AAP) status for a specific endpoint.
+
+AAP automatically applies additional protections when an active attack is
+detected on the endpoint.
+
+Args:
+  - endpoint_id (string): The endpoint ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        endpoint_id: z.string().uuid().describe("Endpoint ID"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ endpoint_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest(
+        resolvedTenantId,
+        `/endpoint/v1/endpoints/${endpoint_id}/adaptive-attack-protection`
+      );
+      return jsonResult(data);
+    })
+  );
+
+  // --- Toggle Adaptive Attack Protection ---
+  server.registerTool(
+    "sophos_toggle_adaptive_attack_protection",
+    {
+      title: "Toggle Adaptive Attack Protection",
+      description: `Enable or disable Adaptive Attack Protection (AAP) on a specific endpoint.
+
+AAP automatically applies additional protections when an active attack is
+detected. Disabling this may reduce protection during active attacks.
+
+Args:
+  - endpoint_id (string): The endpoint ID.
+  - enabled (boolean): Whether to enable or disable AAP.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        endpoint_id: z.string().uuid().describe("Endpoint ID"),
+        enabled: z
+          .boolean()
+          .describe("Whether to enable (true) or disable (false) AAP"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ endpoint_id, enabled, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest(
+        resolvedTenantId,
+        `/endpoint/v1/endpoints/${endpoint_id}/adaptive-attack-protection`,
+        { method: "POST", body: { enabled } }
+      );
+      return jsonResult(data);
+    })
+  );
+
+  // --- Trigger Update Check ---
+  server.registerTool(
+    "sophos_trigger_update_check",
+    {
+      title: "Trigger Sophos Update Check",
+      description: `Trigger a software update check on a specific endpoint.
+
+This initiates an update check for the Sophos agent and related components.
+The check runs asynchronously on the device.
+
+Args:
+  - endpoint_id (string): The endpoint ID to trigger an update check on.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        endpoint_id: z
+          .string()
+          .uuid()
+          .describe("Endpoint ID to trigger update check"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ endpoint_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      await client.tenantRequest(
+        resolvedTenantId,
+        `/endpoint/v1/endpoints/${endpoint_id}/update-checks`,
+        { method: "POST", body: {} }
+      );
+      return jsonResult({
+        status: "update_check_initiated",
+        endpoint_id,
+        message: `Update check initiated on endpoint ${endpoint_id}. The check runs asynchronously on the device.`,
+      });
+    })
+  );
+
+  // --- Request Forensic Logs ---
+  server.registerTool(
+    "sophos_request_forensic_logs",
+    {
+      title: "Request Forensic Log Upload",
+      description: `Request forensic log upload from a specific endpoint.
+
+This initiates the collection and upload of forensic logs from the endpoint.
+The request runs asynchronously; use sophos_get_forensic_log_status to track progress.
+
+Args:
+  - endpoint_id (string): The endpoint ID.
+  - reason (string, optional): Reason for requesting forensic logs.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+
+Returns:
+  Request ID and status for tracking the log upload.`,
+      inputSchema: {
+        endpoint_id: z
+          .string()
+          .uuid()
+          .describe("Endpoint ID to request forensic logs from"),
+        reason: z
+          .string()
+          .optional()
+          .describe("Reason for requesting forensic logs"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ endpoint_id, reason, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const body: Record<string, unknown> = {};
+      if (reason) body.reason = reason;
+
+      const data = await client.tenantRequest(
+        resolvedTenantId,
+        `/endpoint/v1/endpoints/${endpoint_id}/forensic-logs`,
+        { method: "POST", body }
+      );
+      return jsonResult(data);
+    })
+  );
+
+  // --- Get Forensic Log Status ---
+  server.registerTool(
+    "sophos_get_forensic_log_status",
+    {
+      title: "Get Forensic Log Request Status",
+      description: `Get the status of a forensic log upload request.
+
+Check whether a previously requested forensic log upload has completed,
+is still in progress, or has failed.
+
+Args:
+  - endpoint_id (string): The endpoint ID.
+  - request_id (string): The forensic log request ID returned by sophos_request_forensic_logs.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        endpoint_id: z.string().uuid().describe("Endpoint ID"),
+        request_id: z
+          .string()
+          .uuid()
+          .describe("Forensic log request ID"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ endpoint_id, request_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest(
+        resolvedTenantId,
+        `/endpoint/v1/endpoints/${endpoint_id}/forensic-logs/${request_id}`
+      );
+      return jsonResult(data);
+    })
+  );
+
+  // --- Request Memory Dump ---
+  server.registerTool(
+    "sophos_request_memory_dump",
+    {
+      title: "Request Memory Dump",
+      description: `Request a memory dump from a specific endpoint.
+
+This initiates collection of a memory dump from the endpoint. Optionally target
+a specific process. Use sophos_get_memory_dump_status to track progress.
+
+Args:
+  - endpoint_id (string): The endpoint ID.
+  - process_id (string, optional): Target a specific process by ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+
+Returns:
+  Request ID and status for tracking the memory dump.`,
+      inputSchema: {
+        endpoint_id: z
+          .string()
+          .uuid()
+          .describe("Endpoint ID to request memory dump from"),
+        process_id: z
+          .string()
+          .optional()
+          .describe("Process ID to target for memory dump"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ endpoint_id, process_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const body: Record<string, unknown> = {};
+      if (process_id) body.processId = process_id;
+
+      const data = await client.tenantRequest(
+        resolvedTenantId,
+        `/endpoint/v1/endpoints/${endpoint_id}/memory-dumps`,
+        { method: "POST", body }
+      );
+      return jsonResult(data);
+    })
+  );
+
+  // --- Get Memory Dump Status ---
+  server.registerTool(
+    "sophos_get_memory_dump_status",
+    {
+      title: "Get Memory Dump Request Status",
+      description: `Get the status of a memory dump request.
+
+Check whether a previously requested memory dump has completed, is still
+in progress, or has failed.
+
+Args:
+  - endpoint_id (string): The endpoint ID.
+  - request_id (string): The memory dump request ID returned by sophos_request_memory_dump.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        endpoint_id: z.string().uuid().describe("Endpoint ID"),
+        request_id: z
+          .string()
+          .uuid()
+          .describe("Memory dump request ID"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ endpoint_id, request_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest(
+        resolvedTenantId,
+        `/endpoint/v1/endpoints/${endpoint_id}/memory-dumps/${request_id}`
+      );
+      return jsonResult(data);
+    })
+  );
+
+  // --- Bulk Isolate Endpoints ---
+  server.registerTool(
+    "sophos_bulk_isolate_endpoints",
+    {
+      title: "Bulk Isolate/Release Sophos Endpoints",
+      description: `Bulk isolate or release multiple endpoints at once.
+
+WARNING: When isolating, all targeted endpoints will lose network connectivity
+except their management connection to Sophos Central.
+
+Args:
+  - enabled (boolean): true to isolate, false to release.
+  - ids (string[]): Array of endpoint IDs to isolate/release.
+  - comment (string, optional): Reason for isolation/release.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        enabled: z
+          .boolean()
+          .describe("true to isolate, false to release"),
+        ids: z
+          .array(z.string().uuid())
+          .min(1)
+          .describe("Array of endpoint IDs to isolate/release"),
+        comment: z
+          .string()
+          .optional()
+          .describe("Reason for isolation/release"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ enabled, ids, comment, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const body: Record<string, unknown> = { enabled, ids };
+      if (comment) body.comment = comment;
+
+      const data = await client.tenantRequest(
+        resolvedTenantId,
+        "/endpoint/v1/endpoints/isolation",
+        { method: "POST", body }
+      );
+      return jsonResult(data);
+    })
+  );
+
+  // --- Get Endpoint Isolation Status ---
+  server.registerTool(
+    "sophos_get_endpoint_isolation_status",
+    {
+      title: "Get Endpoint Isolation Status",
+      description: `Get the current isolation status of a specific endpoint.
+
+Returns whether the endpoint is currently isolated, not isolated, or if
+an isolation/release operation is in progress.
+
+Args:
+  - endpoint_id (string): The endpoint ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        endpoint_id: z.string().uuid().describe("Endpoint ID"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ endpoint_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest(
+        resolvedTenantId,
+        `/endpoint/v1/endpoints/${endpoint_id}/isolation`
+      );
+      return jsonResult(data);
     })
   );
 }

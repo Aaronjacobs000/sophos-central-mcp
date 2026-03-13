@@ -1,5 +1,11 @@
 /**
- * Tools: sophos_list_users, sophos_list_admins
+ * Tools: sophos_list_users, sophos_list_admins, sophos_list_roles,
+ *        sophos_get_user, sophos_create_user, sophos_update_user, sophos_delete_user,
+ *        sophos_list_user_endpoints, sophos_list_user_groups, sophos_get_user_group,
+ *        sophos_create_user_group, sophos_update_user_group, sophos_delete_user_group,
+ *        sophos_list_user_group_members, sophos_add_users_to_group,
+ *        sophos_remove_user_from_group, sophos_list_user_group_endpoints,
+ *        sophos_list_user_group_policies
  * Interact with the Sophos Common API for directory and admin management.
  */
 
@@ -254,6 +260,869 @@ Args:
         total: data.pages?.total ?? data.pages?.items ?? items.length,
         page: data.pages?.current ?? page,
         roles: items,
+      });
+    })
+  );
+
+  // --- Get User ---
+  server.registerTool(
+    "sophos_get_user",
+    {
+      title: "Get Sophos Directory User Detail",
+      description: `Get full details of a specific directory user.
+
+Args:
+  - user_id (string): The user ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+
+Returns:
+  User details including name, email, group memberships, and associated endpoints.`,
+      inputSchema: {
+        user_id: z.string().uuid().describe("User ID"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ user_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest<SophosUser>(
+        resolvedTenantId,
+        `/common/v1/directory/users/${user_id}`
+      );
+      return jsonResult({
+        id: data.id,
+        name: data.name,
+        first_name: data.firstName ?? null,
+        last_name: data.lastName ?? null,
+        email: data.email ?? null,
+        exchange_login: data.exchangeLogin ?? null,
+        groups: data.groupNames ?? [],
+        group_ids: data.groupIds ?? [],
+      });
+    })
+  );
+
+  // --- Create User ---
+  server.registerTool(
+    "sophos_create_user",
+    {
+      title: "Create Sophos Directory User",
+      description: `Create a new directory user in a Sophos Central tenant.
+
+Args:
+  - name (string): User display name.
+  - first_name (string, optional): First name.
+  - last_name (string, optional): Last name.
+  - email (string, optional): Email address.
+  - exchange_login (string, optional): Exchange login / UPN.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+
+Returns:
+  The created user record.`,
+      inputSchema: {
+        name: z.string().describe("User display name"),
+        first_name: z.string().optional().describe("First name"),
+        last_name: z.string().optional().describe("Last name"),
+        email: z.string().optional().describe("Email address"),
+        exchange_login: z.string().optional().describe("Exchange login / UPN"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(
+      async ({ name, first_name, last_name, email, exchange_login, tenant_id }) => {
+        const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+
+        const body: Record<string, unknown> = { name };
+        if (first_name) body.firstName = first_name;
+        if (last_name) body.lastName = last_name;
+        if (email) body.email = email;
+        if (exchange_login) body.exchangeLogin = exchange_login;
+
+        const data = await client.tenantRequest<SophosUser>(
+          resolvedTenantId,
+          "/common/v1/directory/users",
+          { method: "POST", body }
+        );
+
+        return jsonResult({
+          status: "created",
+          user: {
+            id: data.id,
+            name: data.name,
+            first_name: data.firstName ?? null,
+            last_name: data.lastName ?? null,
+            email: data.email ?? null,
+            exchange_login: data.exchangeLogin ?? null,
+          },
+        });
+      }
+    )
+  );
+
+  // --- Update User ---
+  server.registerTool(
+    "sophos_update_user",
+    {
+      title: "Update Sophos Directory User",
+      description: `Update an existing directory user's details.
+
+Args:
+  - user_id (string): User ID to update.
+  - name (string, optional): New display name.
+  - first_name (string, optional): New first name.
+  - last_name (string, optional): New last name.
+  - email (string, optional): New email address.
+  - exchange_login (string, optional): New Exchange login / UPN.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        user_id: z.string().uuid().describe("User ID to update"),
+        name: z.string().optional().describe("New display name"),
+        first_name: z.string().optional().describe("New first name"),
+        last_name: z.string().optional().describe("New last name"),
+        email: z.string().optional().describe("New email address"),
+        exchange_login: z.string().optional().describe("New Exchange login / UPN"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(
+      async ({ user_id, name, first_name, last_name, email, exchange_login, tenant_id }) => {
+        const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+
+        const body: Record<string, unknown> = {};
+        if (name !== undefined) body.name = name;
+        if (first_name !== undefined) body.firstName = first_name;
+        if (last_name !== undefined) body.lastName = last_name;
+        if (email !== undefined) body.email = email;
+        if (exchange_login !== undefined) body.exchangeLogin = exchange_login;
+
+        if (Object.keys(body).length === 0) {
+          return jsonResult({
+            error: "No fields to update. Provide at least one of: name, first_name, last_name, email, exchange_login.",
+          });
+        }
+
+        const data = await client.tenantRequest<SophosUser>(
+          resolvedTenantId,
+          `/common/v1/directory/users/${user_id}`,
+          { method: "PATCH", body }
+        );
+
+        return jsonResult({
+          status: "updated",
+          user: {
+            id: data.id,
+            name: data.name,
+            first_name: data.firstName ?? null,
+            last_name: data.lastName ?? null,
+            email: data.email ?? null,
+            exchange_login: data.exchangeLogin ?? null,
+          },
+        });
+      }
+    )
+  );
+
+  // --- Delete User ---
+  server.registerTool(
+    "sophos_delete_user",
+    {
+      title: "Delete Sophos Directory User",
+      description: `Delete a directory user from a Sophos Central tenant.
+
+WARNING: This permanently removes the user from the directory. Their device
+associations and group memberships will be removed.
+
+Args:
+  - user_id (string): User ID to delete.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        user_id: z.string().uuid().describe("User ID to delete"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ user_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      await client.tenantRequest(
+        resolvedTenantId,
+        `/common/v1/directory/users/${user_id}`,
+        { method: "DELETE" }
+      );
+      return jsonResult({
+        status: "deleted",
+        user_id,
+        message: `User ${user_id} has been deleted.`,
+      });
+    })
+  );
+
+  // --- List User Endpoints ---
+  server.registerTool(
+    "sophos_list_user_endpoints",
+    {
+      title: "List Endpoints for Sophos User",
+      description: `List endpoints (devices) associated with a specific directory user.
+
+Args:
+  - user_id (string): User ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - limit (number, optional): Max results per page (default 50).
+  - page (number, optional): Page number (default 1).
+
+Returns:
+  Paginated list of endpoints associated with the user.`,
+      inputSchema: {
+        user_id: z.string().uuid().describe("User ID"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .optional()
+          .default(DEFAULT_PAGE_SIZE)
+          .describe("Max results per page (default 50)"),
+        page: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .default(1)
+          .describe("Page number (default 1)"),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ user_id, tenant_id, limit, page }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+
+      const params: Record<string, string> = {
+        pageSize: String(limit),
+        page: String(page),
+      };
+
+      const data = await client.tenantRequest<
+        SophosPagedResponse<Record<string, unknown>>
+      >(resolvedTenantId, `/common/v1/directory/users/${user_id}/endpoints`, {
+        params,
+      });
+
+      const items = data.items ?? [];
+      return jsonResult({
+        total: data.pages?.total ?? data.pages?.items ?? items.length,
+        page: data.pages?.current ?? page,
+        endpoints: items,
+      });
+    })
+  );
+
+  // --- List User Groups ---
+  server.registerTool(
+    "sophos_list_user_groups",
+    {
+      title: "List Sophos Directory User Groups",
+      description: `List directory user groups in a Sophos Central tenant.
+
+User groups organise users for policy assignment. Different from endpoint groups.
+
+Args:
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - search (string, optional): Search by group name.
+  - limit (number, optional): Max results per page (default 50).
+  - page (number, optional): Page number (default 1).
+
+Returns:
+  Paginated list of user groups with: id, name, description.`,
+      inputSchema: {
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+        search: z.string().optional().describe("Search by group name"),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .optional()
+          .default(DEFAULT_PAGE_SIZE)
+          .describe("Max results per page (default 50)"),
+        page: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .default(1)
+          .describe("Page number (default 1)"),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ tenant_id, search, limit, page }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+
+      const params: Record<string, string> = {
+        pageSize: String(limit),
+        page: String(page),
+      };
+
+      if (search) params.search = search;
+
+      const data = await client.tenantRequest<
+        SophosPagedResponse<Record<string, unknown>>
+      >(resolvedTenantId, "/common/v1/directory/user-groups", { params });
+
+      const items = data.items ?? [];
+      return jsonResult({
+        total: data.pages?.total ?? data.pages?.items ?? items.length,
+        page: data.pages?.current ?? page,
+        user_groups: items,
+      });
+    })
+  );
+
+  // --- Get User Group ---
+  server.registerTool(
+    "sophos_get_user_group",
+    {
+      title: "Get Sophos Directory User Group Detail",
+      description: `Get full details of a specific directory user group.
+
+Args:
+  - group_id (string): User group ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+
+Returns:
+  User group details including name, description, and member count.`,
+      inputSchema: {
+        group_id: z.string().uuid().describe("User group ID"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ group_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest<Record<string, unknown>>(
+        resolvedTenantId,
+        `/common/v1/directory/user-groups/${group_id}`
+      );
+      return jsonResult(data);
+    })
+  );
+
+  // --- Create User Group ---
+  server.registerTool(
+    "sophos_create_user_group",
+    {
+      title: "Create Sophos Directory User Group",
+      description: `Create a new directory user group in a Sophos Central tenant.
+
+User groups organise users for policy assignment and management.
+
+Args:
+  - name (string): Group name.
+  - description (string, optional): Group description.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+
+Returns:
+  The created user group.`,
+      inputSchema: {
+        name: z.string().describe("Group name"),
+        description: z.string().optional().describe("Group description"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ name, description, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+
+      const body: Record<string, unknown> = { name };
+      if (description) body.description = description;
+
+      const data = await client.tenantRequest<Record<string, unknown>>(
+        resolvedTenantId,
+        "/common/v1/directory/user-groups",
+        { method: "POST", body }
+      );
+
+      return jsonResult({ status: "created", user_group: data });
+    })
+  );
+
+  // --- Update User Group ---
+  server.registerTool(
+    "sophos_update_user_group",
+    {
+      title: "Update Sophos Directory User Group",
+      description: `Update an existing directory user group's name or description.
+
+Args:
+  - group_id (string): User group ID to update.
+  - name (string, optional): New group name.
+  - description (string, optional): New group description.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        group_id: z.string().uuid().describe("User group ID to update"),
+        name: z.string().optional().describe("New group name"),
+        description: z.string().optional().describe("New group description"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ group_id, name, description, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+
+      const body: Record<string, unknown> = {};
+      if (name !== undefined) body.name = name;
+      if (description !== undefined) body.description = description;
+
+      if (Object.keys(body).length === 0) {
+        return jsonResult({
+          error: "No fields to update. Provide at least one of: name, description.",
+        });
+      }
+
+      const data = await client.tenantRequest<Record<string, unknown>>(
+        resolvedTenantId,
+        `/common/v1/directory/user-groups/${group_id}`,
+        { method: "PATCH", body }
+      );
+
+      return jsonResult({ status: "updated", user_group: data });
+    })
+  );
+
+  // --- Delete User Group ---
+  server.registerTool(
+    "sophos_delete_user_group",
+    {
+      title: "Delete Sophos Directory User Group",
+      description: `Delete a directory user group from a Sophos Central tenant.
+
+WARNING: This removes the group. Users in the group are NOT deleted but will
+no longer be members of this group. Policies assigned to this group will no
+longer apply to those users.
+
+Args:
+  - group_id (string): User group ID to delete.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        group_id: z.string().uuid().describe("User group ID to delete"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ group_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      await client.tenantRequest(
+        resolvedTenantId,
+        `/common/v1/directory/user-groups/${group_id}`,
+        { method: "DELETE" }
+      );
+      return jsonResult({
+        status: "deleted",
+        group_id,
+        message: `User group ${group_id} has been deleted.`,
+      });
+    })
+  );
+
+  // --- List User Group Members ---
+  server.registerTool(
+    "sophos_list_user_group_members",
+    {
+      title: "List Members of Sophos User Group",
+      description: `List the users that are members of a specific directory user group.
+
+Args:
+  - group_id (string): User group ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - limit (number, optional): Max results per page (default 50).
+  - page (number, optional): Page number (default 1).
+
+Returns:
+  Paginated list of users in the group.`,
+      inputSchema: {
+        group_id: z.string().uuid().describe("User group ID"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .optional()
+          .default(DEFAULT_PAGE_SIZE)
+          .describe("Max results per page (default 50)"),
+        page: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .default(1)
+          .describe("Page number (default 1)"),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ group_id, tenant_id, limit, page }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+
+      const params: Record<string, string> = {
+        pageSize: String(limit),
+        page: String(page),
+      };
+
+      const data = await client.tenantRequest<
+        SophosPagedResponse<SophosUser>
+      >(resolvedTenantId, `/common/v1/directory/user-groups/${group_id}/users`, {
+        params,
+      });
+
+      const items = data.items ?? [];
+      return jsonResult({
+        total: data.pages?.total ?? data.pages?.items ?? items.length,
+        page: data.pages?.current ?? page,
+        users: items.map((u) => ({
+          id: u.id,
+          name: u.name,
+          first_name: u.firstName ?? null,
+          last_name: u.lastName ?? null,
+          email: u.email ?? null,
+        })),
+      });
+    })
+  );
+
+  // --- Add Users to Group ---
+  server.registerTool(
+    "sophos_add_users_to_group",
+    {
+      title: "Add Users to Sophos User Group",
+      description: `Add one or more users to an existing directory user group.
+
+Args:
+  - group_id (string): User group ID.
+  - user_ids (array): Array of user IDs to add.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        group_id: z.string().uuid().describe("User group ID"),
+        user_ids: z
+          .array(z.string().uuid())
+          .min(1)
+          .describe("User IDs to add to the group"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ group_id, user_ids, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+
+      await client.tenantRequest(
+        resolvedTenantId,
+        `/common/v1/directory/user-groups/${group_id}/users`,
+        { method: "POST", body: { ids: user_ids } }
+      );
+
+      return jsonResult({
+        status: "added",
+        group_id,
+        users_added: user_ids.length,
+        message: `Added ${user_ids.length} user(s) to group ${group_id}.`,
+      });
+    })
+  );
+
+  // --- Remove User from Group ---
+  server.registerTool(
+    "sophos_remove_user_from_group",
+    {
+      title: "Remove User from Sophos User Group",
+      description: `Remove a single user from a directory user group.
+
+The user is not deleted, only removed from the group.
+
+Args:
+  - group_id (string): User group ID.
+  - user_id (string): User ID to remove.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        group_id: z.string().uuid().describe("User group ID"),
+        user_id: z.string().uuid().describe("User ID to remove"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ group_id, user_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+
+      await client.tenantRequest(
+        resolvedTenantId,
+        `/common/v1/directory/user-groups/${group_id}/users/${user_id}`,
+        { method: "DELETE" }
+      );
+
+      return jsonResult({
+        status: "removed",
+        group_id,
+        user_id,
+        message: `User ${user_id} removed from group ${group_id}.`,
+      });
+    })
+  );
+
+  // --- List User Group Endpoints ---
+  server.registerTool(
+    "sophos_list_user_group_endpoints",
+    {
+      title: "List Endpoints in Sophos User Group",
+      description: `List endpoints (devices) associated with a specific directory user group.
+
+Returns devices belonging to users in this group.
+
+Args:
+  - group_id (string): User group ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - limit (number, optional): Max results per page (default 50).
+  - page (number, optional): Page number (default 1).
+
+Returns:
+  Paginated list of endpoints in the user group.`,
+      inputSchema: {
+        group_id: z.string().uuid().describe("User group ID"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .optional()
+          .default(DEFAULT_PAGE_SIZE)
+          .describe("Max results per page (default 50)"),
+        page: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .default(1)
+          .describe("Page number (default 1)"),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ group_id, tenant_id, limit, page }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+
+      const params: Record<string, string> = {
+        pageSize: String(limit),
+        page: String(page),
+      };
+
+      const data = await client.tenantRequest<
+        SophosPagedResponse<Record<string, unknown>>
+      >(
+        resolvedTenantId,
+        `/common/v1/directory/user-groups/${group_id}/endpoints`,
+        { params }
+      );
+
+      const items = data.items ?? [];
+      return jsonResult({
+        total: data.pages?.total ?? data.pages?.items ?? items.length,
+        page: data.pages?.current ?? page,
+        endpoints: items,
+      });
+    })
+  );
+
+  // --- List User Group Policies ---
+  server.registerTool(
+    "sophos_list_user_group_policies",
+    {
+      title: "List Policies for Sophos User Group",
+      description: `List policies assigned to a specific directory user group.
+
+Returns policies that are applied at the user group level.
+
+Args:
+  - group_id (string): User group ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - limit (number, optional): Max results per page (default 50).
+  - page (number, optional): Page number (default 1).
+
+Returns:
+  Paginated list of policies assigned to the user group.`,
+      inputSchema: {
+        group_id: z.string().uuid().describe("User group ID"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .optional()
+          .default(DEFAULT_PAGE_SIZE)
+          .describe("Max results per page (default 50)"),
+        page: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .default(1)
+          .describe("Page number (default 1)"),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ group_id, tenant_id, limit, page }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+
+      const params: Record<string, string> = {
+        pageSize: String(limit),
+        page: String(page),
+      };
+
+      const data = await client.tenantRequest<
+        SophosPagedResponse<Record<string, unknown>>
+      >(
+        resolvedTenantId,
+        `/common/v1/directory/user-groups/${group_id}/policies`,
+        { params }
+      );
+
+      const items = data.items ?? [];
+      return jsonResult({
+        total: data.pages?.total ?? data.pages?.items ?? items.length,
+        page: data.pages?.current ?? page,
+        policies: items,
       });
     })
   );

@@ -224,4 +224,162 @@ Returns:
       });
     })
   );
+
+  // --- List XDR Query Runs ---
+  server.registerTool(
+    "sophos_list_xdr_query_runs",
+    {
+      title: "List XDR Query Runs",
+      description: `List XDR Data Lake query runs for a tenant.
+
+Args:
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - limit (number, optional): Results per page (default 50).
+  - page (number, optional): Page number (default 1).`,
+      inputSchema: {
+        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
+        limit: z.number().int().min(1).max(MAX_PAGE_SIZE).optional().default(DEFAULT_PAGE_SIZE).describe("Results per page (default 50)"),
+        page: z.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    withErrorHandling(async ({ tenant_id, limit, page }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest<{ items: SophosQueryRun[]; pages: Record<string, unknown> }>(
+        resolvedTenantId,
+        "/xdr-query/v1/queries/runs",
+        { params: { pageSize: String(limit), page: String(page) } }
+      );
+      return jsonResult({
+        total: (data.pages as Record<string, unknown>)?.total ?? data.items.length,
+        page: (data.pages as Record<string, unknown>)?.current ?? page,
+        runs: data.items.map((r) => ({
+          run_id: r.id,
+          status: r.status,
+          result: r.result,
+          created_at: r.createdAt,
+          finished_at: r.finishedAt ?? null,
+        })),
+      });
+    })
+  );
+
+  // --- Cancel XDR Query Run ---
+  server.registerTool(
+    "sophos_cancel_xdr_query_run",
+    {
+      title: "Cancel XDR Query Run",
+      description: `Cancel a running XDR Data Lake query.
+
+Args:
+  - run_id (string): Run ID to cancel.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        run_id: z.string().uuid().describe("Run ID to cancel"),
+        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    withErrorHandling(async ({ run_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      await client.tenantRequest(resolvedTenantId, `/xdr-query/v1/queries/runs/${run_id}`, { method: "DELETE" });
+      return jsonResult({ status: "cancelled", run_id, message: `XDR query run ${run_id} cancelled.` });
+    })
+  );
+
+  // --- List XDR Query Categories ---
+  server.registerTool(
+    "sophos_list_xdr_query_categories",
+    {
+      title: "List XDR Query Categories",
+      description: `List available XDR Data Lake query categories.
+
+Args:
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    withErrorHandling(async ({ tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest<Record<string, unknown>>(resolvedTenantId, "/xdr-query/v1/queries/categories");
+      return jsonResult(data);
+    })
+  );
+
+  // --- Get XDR Query Category ---
+  server.registerTool(
+    "sophos_get_xdr_query_category",
+    {
+      title: "Get XDR Query Category",
+      description: `Get details of a specific XDR Data Lake query category.
+
+Args:
+  - category_id (string): Category ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        category_id: z.string().describe("Category ID"),
+        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    withErrorHandling(async ({ category_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest<Record<string, unknown>>(resolvedTenantId, `/xdr-query/v1/queries/categories/${category_id}`);
+      return jsonResult(data);
+    })
+  );
+
+  // --- List Saved XDR Queries ---
+  server.registerTool(
+    "sophos_list_xdr_queries",
+    {
+      title: "List Saved XDR Queries",
+      description: `List saved/canned XDR Data Lake queries.
+
+Args:
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - category_id (string, optional): Filter by category ID.
+  - limit (number, optional): Results per page (default 50).
+  - page (number, optional): Page number (default 1).`,
+      inputSchema: {
+        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
+        category_id: z.string().optional().describe("Filter by category ID"),
+        limit: z.number().int().min(1).max(MAX_PAGE_SIZE).optional().default(DEFAULT_PAGE_SIZE).describe("Results per page (default 50)"),
+        page: z.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    withErrorHandling(async ({ tenant_id, category_id, limit, page }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const params: Record<string, string> = { pageSize: String(limit), page: String(page) };
+      if (category_id) params.categoryId = category_id;
+      const data = await client.tenantRequest<Record<string, unknown>>(resolvedTenantId, "/xdr-query/v1/queries", { params });
+      return jsonResult(data);
+    })
+  );
+
+  // --- Get Saved XDR Query ---
+  server.registerTool(
+    "sophos_get_xdr_query",
+    {
+      title: "Get Saved XDR Query",
+      description: `Get details of a specific saved XDR Data Lake query including its SQL template.
+
+Args:
+  - query_id (string): Query ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        query_id: z.string().describe("Query ID"),
+        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    withErrorHandling(async ({ query_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest<Record<string, unknown>>(resolvedTenantId, `/xdr-query/v1/queries/${query_id}`);
+      return jsonResult(data);
+    })
+  );
 }

@@ -9,7 +9,7 @@ import type { SophosApiError } from "../types/sophos.js";
 
 export interface RequestOptions {
   /** HTTP method */
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   /** Query parameters */
   params?: Record<string, string>;
   /** JSON request body */

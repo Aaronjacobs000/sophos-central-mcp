@@ -1,6 +1,7 @@
 /**
  * Tools: sophos_list_cases, sophos_get_case, sophos_create_case, sophos_update_case,
- *        sophos_list_case_detections, sophos_get_case_mitre_summary
+ *        sophos_list_case_detections, sophos_get_case_mitre_summary,
+ *        sophos_delete_case, sophos_list_case_impacted_entities, sophos_get_case_detection
  * Interact with the Sophos Cases API /cases/v1/cases
  */
 
@@ -11,6 +12,7 @@ import type { TenantResolver } from "../client/tenant-resolver.js";
 import type {
   SophosCase,
   SophosCasePage,
+  SophosCaseDetection,
   SophosCaseDetectionPage,
   SophosCaseMitreSummary,
 } from "../types/sophos.js";
@@ -379,6 +381,95 @@ Returns:
         `/cases/v1/cases/${case_id}/mitre-attack-summary`
       );
       return jsonResult({ case_id, mitre_attack_summary: data });
+    })
+  );
+
+  // --- Delete Case ---
+  server.registerTool(
+    "sophos_delete_case",
+    {
+      title: "Delete Sophos Case",
+      description: `Delete an investigation case from Sophos Central.
+
+Only self-managed cases can be deleted via the API.
+
+Args:
+  - case_id (string): Case ID to delete (e.g. '1-598868').
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        case_id: z.string().describe("Case ID to delete (e.g. '1-598868')"),
+        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+    },
+    withErrorHandling(async ({ case_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      await client.tenantRequest(resolvedTenantId, `/cases/v1/cases/${case_id}`, { method: "DELETE" });
+      return jsonResult({ status: "deleted", case_id, message: `Case ${case_id} deleted.` });
+    })
+  );
+
+  // --- List Case Impacted Entities ---
+  server.registerTool(
+    "sophos_list_case_impacted_entities",
+    {
+      title: "List Case Impacted Entities",
+      description: `List impacted entities (endpoints, users) associated with a Sophos Central case.
+
+Args:
+  - case_id (string): Case ID (e.g. '1-598868').
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - limit (number, optional): Results per page (1-50, default 50).
+  - page (number, optional): Page number (default 1).`,
+      inputSchema: {
+        case_id: z.string().describe("Case ID (e.g. '1-598868')"),
+        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
+        limit: z.number().int().min(1).max(CASES_MAX_PAGE_SIZE).optional().default(CASES_MAX_PAGE_SIZE).describe("Results per page (max 50)"),
+        page: z.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    withErrorHandling(async ({ case_id, tenant_id, limit, page }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest<SophosCaseDetectionPage>(
+        resolvedTenantId,
+        `/cases/v1/cases/${case_id}/impacted-entities`,
+        { params: { pageSize: String(limit), page: String(page) } }
+      );
+      return jsonResult({
+        case_id,
+        total: data.pages.total ?? data.pages.items ?? data.items.length,
+        page: data.pages.current ?? page,
+        impacted_entities: data.items,
+      });
+    })
+  );
+
+  // --- Get Case Detection ---
+  server.registerTool(
+    "sophos_get_case_detection",
+    {
+      title: "Get Case Detection Detail",
+      description: `Get details of a specific detection within a Sophos Central case.
+
+Args:
+  - case_id (string): Case ID (e.g. '1-598868').
+  - detection_id (string): Detection ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        case_id: z.string().describe("Case ID (e.g. '1-598868')"),
+        detection_id: z.string().describe("Detection ID"),
+        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    withErrorHandling(async ({ case_id, detection_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest<SophosCaseDetection>(
+        resolvedTenantId,
+        `/cases/v1/cases/${case_id}/detections/${detection_id}`
+      );
+      return jsonResult(data);
     })
   );
 }
