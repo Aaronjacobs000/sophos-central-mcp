@@ -52,6 +52,18 @@ claude mcp add sophos-central \
 - **Dual transport**: Streamable HTTP (for Claude Desktop / Claude Code) or stdio
 - **Full API coverage**: 265 tools across endpoints, alerts, policies, firewalls, email, mobile, XDR, cases, SIEM, and more
 
+## Screenshots
+
+**Querying tenants and drilling into endpoint status:**
+
+![Tenant listing and endpoint staleness check](docs/screenshots/tenant-listing.png)
+
+**Tenant health audit with full category breakdown:**
+
+![Tenant health overview](docs/screenshots/tenant-health-overview.png)
+
+![Tenant health detail and endpoints](docs/screenshots/tenant-health-detail.png)
+
 ## Prerequisites
 
 - Node.js 20 or later
