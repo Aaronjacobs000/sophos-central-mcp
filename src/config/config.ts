@@ -41,7 +41,10 @@ export function loadConfig(): SophosConfig {
 export const SOPHOS_AUTH_URL = "https://id.sophos.com/api/v2/oauth2/token";
 export const SOPHOS_GLOBAL_API = "https://api.central.sophos.com";
 
-// Response size limits
-export const CHARACTER_LIMIT = 25000;
+// Response size limits (CHARACTER_LIMIT configurable via env var)
+export const CHARACTER_LIMIT = Math.max(
+  10000,
+  parseInt(process.env.CHARACTER_LIMIT || "50000", 10) || 50000
+);
 export const DEFAULT_PAGE_SIZE = 50;
 export const MAX_PAGE_SIZE = 100;
