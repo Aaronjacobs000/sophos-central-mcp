@@ -743,10 +743,15 @@ Monthly cost per line item is calculated as: billableQuantity * unitPrice.
 The netPrice field in raw billing data is the total order line value shared across
 all customers on that line — NOT the per-customer cost.
 
+Use compact=true to get a smaller response with coverage flags (hasMDR, mdrTier,
+hasFirewall, firewallModels) instead of full product arrays. This fits all customers
+in a single response without hitting the character limit.
+
 Args:
   - year (number): The year (e.g. 2026).
   - month (number): The month (1-12).
   - limit (number, optional): Return only the top N customers (default: all).
+  - compact (boolean, optional): Return coverage flags instead of full product arrays (default: false).
 
 Returns:
   Ranked list of customers with monthly cost, product breakdown, and estate totals.`,
@@ -759,6 +764,10 @@ Returns:
           .min(1)
           .optional()
           .describe("Return only the top N customers (default: all)"),
+        compact: z
+          .boolean()
+          .optional()
+          .describe("Return coverage flags instead of full product arrays (default: false)"),
       },
       annotations: {
         readOnlyHint: true,
@@ -767,7 +776,7 @@ Returns:
         openWorldHint: true,
       },
     },
-    withErrorHandling(async ({ year, month, limit }) => {
+    withErrorHandling(async ({ year, month, limit, compact }) => {
       // Auto-paginate to collect ALL billing line items
       const allItems: Array<Record<string, unknown>> = [];
       let cursor: string | undefined;
@@ -804,6 +813,10 @@ Returns:
           totalUsers: number;
           totalServers: number;
           totalDevices: number;
+          hasMDR: boolean;
+          mdrTier: string | null;
+          hasFirewall: boolean;
+          firewallModels: Set<string>;
         }
       >();
 
@@ -826,6 +839,10 @@ Returns:
             totalUsers: 0,
             totalServers: 0,
             totalDevices: 0,
+            hasMDR: false,
+            mdrTier: null,
+            hasFirewall: false,
+            firewallModels: new Set(),
           });
         }
 
@@ -845,6 +862,28 @@ Returns:
         if (productGroup === "User") cust.totalUsers += quantity;
         else if (productGroup === "Server") cust.totalServers += quantity;
         else if (productGroup === "Device") cust.totalDevices += quantity;
+
+        // Track MDR coverage
+        const descLower = productDesc.toLowerCase();
+        if (descLower.includes("mdr complete")) {
+          cust.hasMDR = true;
+          cust.mdrTier = "Complete";
+        } else if (descLower.includes("mdr essentials") && cust.mdrTier !== "Complete") {
+          cust.hasMDR = true;
+          cust.mdrTier = "Essentials";
+        }
+
+        // Track firewall coverage
+        if (productGroup === "Device" && (
+          descLower.includes("xgs") || descLower.includes("xg ") ||
+          descLower.includes("sf sw") || descLower.includes("sf virtual") ||
+          descLower.includes("xstream protection") || descLower.includes("standard protection")
+        )) {
+          cust.hasFirewall = true;
+          // Extract model from description
+          const modelMatch = productDesc.match(/^(XGS \d+|XG \d+|SF SW\/Virtual[^-]*)/i);
+          if (modelMatch) cust.firewallModels.add(modelMatch[1].trim());
+        }
       }
 
       // Sort by monthly total descending
@@ -856,6 +895,32 @@ Returns:
       const grandTotal = [...customers.values()].reduce((sum, c) => sum + c.monthlyTotal, 0);
       const totalCustomers = customers.size;
 
+      if (compact) {
+        const compactSummary = sorted.map((c, i) => ({
+          rank: i + 1,
+          customer: c.name,
+          accountId: c.accountId,
+          monthlyAUD: Math.round(c.monthlyTotal * 100) / 100,
+          users: c.totalUsers,
+          servers: c.totalServers,
+          devices: c.totalDevices,
+          hasMDR: c.hasMDR,
+          mdrTier: c.mdrTier,
+          hasFirewall: c.hasFirewall,
+          firewallModels: [...c.firewallModels],
+        }));
+
+        return jsonResult({
+          period: `${year}-${String(month).padStart(2, "0")}`,
+          currency: "AUD",
+          totalCustomers,
+          totalLineItems: allItems.length,
+          grandTotalMonthlyAUD: Math.round(grandTotal * 100) / 100,
+          returnedCustomers: compactSummary.length,
+          customers: compactSummary,
+        });
+      }
+
       const summary = sorted.map((c, i) => ({
         rank: i + 1,
         customer: c.name,
@@ -864,6 +929,10 @@ Returns:
         users: c.totalUsers,
         servers: c.totalServers,
         devices: c.totalDevices,
+        hasMDR: c.hasMDR,
+        mdrTier: c.mdrTier,
+        hasFirewall: c.hasFirewall,
+        firewallModels: [...c.firewallModels],
         products: [...c.products.values()].map((p) => ({
           product: p.description,
           group: p.productGroup,
