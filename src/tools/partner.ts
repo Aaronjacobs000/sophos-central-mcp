@@ -653,12 +653,17 @@ Returns:
       description: `Get billing usage for a specific month.
 
 Returns billing usage data across all managed tenants for the given year and month.
-Supports pagination and optional tenant filtering.
+Supports pagination and optional client-side tenant filtering.
+
+When tenant_id is provided, results are filtered client-side by matching the
+accountId field in each billing line item. Items without an accountId (e.g.
+standalone device subscriptions) are excluded from filtered results. The
+pages metadata reflects the unfiltered totals from the API.
 
 Args:
   - year (number): The year (e.g. 2026).
   - month (number): The month (1-12).
-  - tenant_id (string, optional): Filter to a specific tenant ID.
+  - tenant_id (string, optional): Filter results to a specific tenant by accountId.
   - page_size (number, optional): Items per page (default 50).
   - cursor (string, optional): Pagination cursor from a previous response.
 
@@ -671,7 +676,7 @@ Returns:
           .string()
           .uuid()
           .optional()
-          .describe("Filter to a specific tenant ID"),
+          .describe("Filter results to a specific tenant by accountId"),
         page_size: z
           .number()
           .int()
@@ -693,14 +698,29 @@ Returns:
     },
     withErrorHandling(async ({ year, month, tenant_id, page_size, cursor }) => {
       const params: Record<string, string> = { pageTotal: "true" };
-      if (tenant_id) params.tenantId = tenant_id;
       if (page_size) params.pageSize = String(page_size);
       if (cursor) params.cursor = cursor;
 
-      const data = await client.globalRequest<Record<string, unknown>>(
+      const data = await client.globalRequest<{
+        items?: Array<Record<string, unknown>>;
+        pages?: Record<string, unknown>;
+      }>(
         `/partner/v1/billing/usage/${year}/${month}`,
         { params }
       );
+
+      if (tenant_id && Array.isArray(data.items)) {
+        const filtered = data.items.filter(
+          (item) => item.accountId === tenant_id || item.externalId === tenant_id
+        );
+        return jsonResult({
+          items: filtered,
+          filteredCount: filtered.length,
+          unfilteredCount: data.items.length,
+          tenantFilter: tenant_id,
+          pages: data.pages,
+        });
+      }
 
       return jsonResult(data);
     })

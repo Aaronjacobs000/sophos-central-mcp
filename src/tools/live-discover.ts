@@ -104,6 +104,10 @@ You can run either a saved query (by query_id) or an ad hoc SQL query.
 Target endpoints using endpoint_ids (specific endpoints), hostname_contains (partial match),
 or all_endpoints=true (all endpoints in the tenant).
 
+IMPORTANT: Many saved queries use variables (e.g. $$process_name$$). When running a saved
+query that has variable placeholders, you MUST provide the variables array with the values.
+Check the query template from sophos_list_live_discover_queries to see required variables.
+
 This is an async API. Returns a run_id. Use sophos_get_live_discover_run to poll status,
 then sophos_get_live_discover_results to retrieve results once finished.
 
@@ -112,6 +116,8 @@ Args:
   - query_id (string, optional): ID of a saved query to run (from sophos_list_live_discover_queries).
   - sql (string, optional): Ad hoc SQL query to run (alternative to query_id).
   - query_name (string, optional): Label for the ad hoc query.
+  - variables (array, optional): Variable substitutions for saved query templates.
+    Each entry: { name: "variable_name", dataType: "text", value: "value" }.
   - endpoint_ids (array, optional): List of specific endpoint UUIDs to target.
   - hostname_contains (string, optional): Target endpoints whose hostname contains this string.
   - all_endpoints (boolean, optional): Target all endpoints in the tenant (use with caution).
@@ -140,6 +146,16 @@ Example SQL (OSquery):
           .string()
           .optional()
           .describe("Label for the ad hoc query"),
+        variables: z
+          .array(
+            z.object({
+              name: z.string().describe("Variable name (without $$ delimiters)"),
+              dataType: z.string().optional().default("text").describe('Data type (default "text")'),
+              value: z.string().describe("Variable value"),
+            })
+          )
+          .optional()
+          .describe("Variable substitutions for saved query templates"),
         endpoint_ids: z
           .array(z.string().uuid())
           .optional()
@@ -166,6 +182,7 @@ Example SQL (OSquery):
         query_id,
         sql,
         query_name,
+        variables,
         endpoint_ids,
         hostname_contains,
         all_endpoints,
@@ -180,10 +197,13 @@ Example SQL (OSquery):
         const body: Record<string, unknown> = {};
         if (query_id) {
           body.savedQuery = { queryId: query_id };
+          if (variables?.length) {
+            body.variables = variables;
+          }
         } else {
           body.adHocQuery = {
             template: sql,
-            ...(query_name ? { name: query_name } : {}),
+            name: query_name ?? `mcp-query-${Date.now()}`,
           };
         }
 

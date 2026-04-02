@@ -74,32 +74,21 @@ Example SQL:
     withErrorHandling(async ({ tenant_id, sql, from_date, to_date, query_name }) => {
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
       const body: Record<string, unknown> = {
+        tenantIds: [resolvedTenantId],
+        queryFormat: "sql",
         adHocQuery: {
           template: sql,
-          ...(query_name ? { name: query_name } : {}),
+          name: query_name ?? `mcp-query-${Date.now()}`,
         },
       };
       if (from_date) body.from = from_date;
       if (to_date) body.to = to_date;
 
-      let run: SophosQueryRun;
-      try {
-        run = await client.tenantRequest<SophosQueryRun>(
-          resolvedTenantId,
-          "/xdr-query/v1/queries/runs",
-          { method: "POST", body }
-        );
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        if (msg.includes("Data conversion failed")) {
-          return jsonResult({
-            error: "xdr_not_available",
-            message:
-              "XDR Data Lake query is not available for this tenant. The tenant likely does not have XDR data lake ingestion active. An XDR or MTR licence with data lake ingestion enabled is required.",
-          });
-        }
-        throw error;
-      }
+      const run = await client.tenantRequest<SophosQueryRun>(
+        resolvedTenantId,
+        "/xdr-query/v1/queries/runs",
+        { method: "POST", body }
+      );
       return jsonResult({
         run_id: run.id,
         status: run.status,
