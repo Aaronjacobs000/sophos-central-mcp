@@ -8,7 +8,7 @@
  *        sophos_list_partner_admin_role_assignments,
  *        sophos_add_partner_admin_role_assignment,
  *        sophos_delete_partner_admin_role_assignment,
- *        sophos_get_billing_usage
+ *        sophos_get_billing_usage, sophos_get_billing_summary
  * Partner/organization-level tools using globalRequest.
  */
 
@@ -723,6 +723,164 @@ Returns:
       }
 
       return jsonResult(data);
+    })
+  );
+
+  // =========================================================================
+  // BILLING SUMMARY (aggregated)
+  // =========================================================================
+
+  server.registerTool(
+    "sophos_get_billing_summary",
+    {
+      title: "Get Billing Summary by Customer",
+      description: `Get an aggregated billing summary for a specific month, ranked by customer revenue.
+
+Auto-paginates through ALL billing line items and aggregates by customer.
+Returns per-customer totals with product breakdown, sorted by monthly revenue descending.
+
+Monthly cost per line item is calculated as: billableQuantity * unitPrice.
+The netPrice field in raw billing data is the total order line value shared across
+all customers on that line — NOT the per-customer cost.
+
+Args:
+  - year (number): The year (e.g. 2026).
+  - month (number): The month (1-12).
+  - limit (number, optional): Return only the top N customers (default: all).
+
+Returns:
+  Ranked list of customers with monthly cost, product breakdown, and estate totals.`,
+      inputSchema: {
+        year: z.number().int().min(2000).max(2100).describe("Year (e.g. 2026)"),
+        month: z.number().int().min(1).max(12).describe("Month (1-12)"),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .describe("Return only the top N customers (default: all)"),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ year, month, limit }) => {
+      // Auto-paginate to collect ALL billing line items
+      const allItems: Array<Record<string, unknown>> = [];
+      let cursor: string | undefined;
+      let pageCount = 0;
+      const maxPages = 20; // Safety limit
+
+      do {
+        const params: Record<string, string> = {
+          pageTotal: "true",
+          pageSize: "1000",
+        };
+        if (cursor) params.cursor = cursor;
+
+        const data = await client.globalRequest<{
+          items?: Array<Record<string, unknown>>;
+          pages?: { nextKey?: string; items?: number };
+        }>(`/partner/v1/billing/usage/${year}/${month}`, { params });
+
+        if (Array.isArray(data.items)) {
+          allItems.push(...data.items);
+        }
+        cursor = data.pages?.nextKey ?? undefined;
+        pageCount++;
+      } while (cursor && pageCount < maxPages);
+
+      // Aggregate by customer
+      const customers = new Map<
+        string,
+        {
+          name: string;
+          accountId: string | null;
+          monthlyTotal: number;
+          products: Map<string, { description: string; quantity: number; monthlyCost: number; productGroup: string }>;
+          totalUsers: number;
+          totalServers: number;
+          totalDevices: number;
+        }
+      >();
+
+      for (const item of allItems) {
+        const name = String(item.assignedAccountIdentifier ?? "Unknown");
+        const accountId = (item.accountId as string) ?? null;
+        const quantity = Number(item.billableQuantity ?? 0);
+        const unitPrice = Number(item.unitPrice ?? 0);
+        const monthlyCost = quantity * unitPrice;
+        const productGroup = String(item.productGroup ?? "Other");
+        const productDesc = String(item.productDescription ?? "Unknown");
+        const productCode = String(item.productCode ?? "unknown");
+
+        if (!customers.has(name)) {
+          customers.set(name, {
+            name,
+            accountId,
+            monthlyTotal: 0,
+            products: new Map(),
+            totalUsers: 0,
+            totalServers: 0,
+            totalDevices: 0,
+          });
+        }
+
+        const cust = customers.get(name)!;
+        cust.monthlyTotal += monthlyCost;
+
+        // Track product breakdown
+        const key = productCode;
+        if (!cust.products.has(key)) {
+          cust.products.set(key, { description: productDesc, quantity: 0, monthlyCost: 0, productGroup });
+        }
+        const prod = cust.products.get(key)!;
+        prod.quantity += quantity;
+        prod.monthlyCost += monthlyCost;
+
+        // Track seat/device counts
+        if (productGroup === "User") cust.totalUsers += quantity;
+        else if (productGroup === "Server") cust.totalServers += quantity;
+        else if (productGroup === "Device") cust.totalDevices += quantity;
+      }
+
+      // Sort by monthly total descending
+      const sorted = [...customers.values()]
+        .sort((a, b) => b.monthlyTotal - a.monthlyTotal)
+        .slice(0, limit ?? customers.size);
+
+      // Build summary
+      const grandTotal = [...customers.values()].reduce((sum, c) => sum + c.monthlyTotal, 0);
+      const totalCustomers = customers.size;
+
+      const summary = sorted.map((c, i) => ({
+        rank: i + 1,
+        customer: c.name,
+        accountId: c.accountId,
+        monthlyAUD: Math.round(c.monthlyTotal * 100) / 100,
+        users: c.totalUsers,
+        servers: c.totalServers,
+        devices: c.totalDevices,
+        products: [...c.products.values()].map((p) => ({
+          product: p.description,
+          group: p.productGroup,
+          quantity: p.quantity,
+          monthlyAUD: Math.round(p.monthlyCost * 100) / 100,
+        })),
+      }));
+
+      return jsonResult({
+        period: `${year}-${String(month).padStart(2, "0")}`,
+        currency: "AUD",
+        totalCustomers,
+        totalLineItems: allItems.length,
+        grandTotalMonthlyAUD: Math.round(grandTotal * 100) / 100,
+        returnedCustomers: summary.length,
+        customers: summary,
+      });
     })
   );
 
