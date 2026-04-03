@@ -74,8 +74,6 @@ Example SQL:
     withErrorHandling(async ({ tenant_id, sql, from_date, to_date, query_name }) => {
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
       const body: Record<string, unknown> = {
-        tenantIds: [resolvedTenantId],
-        queryFormat: "sql",
         adHocQuery: {
           template: sql,
           name: query_name ?? `mcp-query-${Date.now()}`,
