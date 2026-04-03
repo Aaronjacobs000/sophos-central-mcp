@@ -301,7 +301,7 @@ Args:
         name: z.string().describe("Policy name"),
         type: z.string().describe('Policy type e.g. "threat-protection", "peripheral-control", "web-control"'),
         enabled: z.boolean().optional().describe("Whether the policy is enabled (default true)"),
-        priority: z.number().int().optional().describe("Policy priority (lower = higher priority)"),
+        priority: z.coerce.number().int().optional().describe("Policy priority (lower = higher priority)"),
         settings: z.record(z.unknown()).optional().describe("Policy settings object"),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },

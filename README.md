@@ -1,6 +1,6 @@
 # Sophos Central MCP Server
 
-MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Supports partner, organisation, and single-tenant credential types with automatic region routing. **257 tools** covering 14 Sophos API namespaces.
+MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Supports partner, organisation, and single-tenant credential types with automatic region routing. **255 tools** covering 14 Sophos API namespaces.
 
 ## Quick Start
 
@@ -82,7 +82,7 @@ claude mcp add sophos-central ^
 - **Token lifecycle**: Automatic OAuth2 token refresh before expiry
 - **Rate limit handling**: Retry with backoff on 429 responses
 - **Dual transport**: Streamable HTTP (for Claude Desktop / Claude Code) or stdio
-- **Full API coverage**: 257 tools across endpoints, alerts, policies, firewalls, email, mobile, XDR, cases, SIEM, and more
+- **Full API coverage**: 255 tools across endpoints, alerts, policies, firewalls, email, mobile, XDR, cases, SIEM, and more
 
 ## Screenshots
 
@@ -187,7 +187,7 @@ TRANSPORT=http
 | `sophos_bulk_isolate_endpoints` | Bulk isolate/release multiple endpoints |
 | `sophos_get_endpoint_isolation_status` | Get endpoint isolation status |
 
-### Endpoint Settings (32 tools)
+### Endpoint Settings (30 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -221,8 +221,6 @@ TRANSPORT=http
 | `sophos_delete_isolation_exclusion` | Delete isolation exclusion |
 | `sophos_get_lockdown_settings` | Get server lockdown settings |
 | `sophos_update_lockdown_settings` | Update server lockdown settings |
-| `sophos_get_mtr_settings` | Get MDR/MTR settings |
-| `sophos_update_mtr_settings` | Update MDR/MTR settings |
 
 ### Endpoint Migrations (7 tools)
 

@@ -59,8 +59,8 @@ Args:
         date_from: z.string().optional().describe("ISO 8601 start date for date range filter"),
         date_to: z.string().optional().describe("ISO 8601 end date for date range filter"),
         reason: z.string().optional().describe('Filter by quarantine reason e.g. "spam", "malware", "bulkEmail"'),
-        limit: z.number().int().min(1).max(100).optional().default(DEFAULT_PAGE_SIZE).describe("Max results per page (default 50)"),
-        page: z.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
+        limit: z.coerce.number().int().min(1).max(100).optional().default(DEFAULT_PAGE_SIZE).describe("Max results per page (default 50)"),
+        page: z.coerce.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
       },
       annotations: {
         readOnlyHint: true,
@@ -423,8 +423,8 @@ Args:
         date_from: z.string().optional().describe("ISO 8601 start date for date range filter"),
         date_to: z.string().optional().describe("ISO 8601 end date for date range filter"),
         reason: z.string().optional().describe("Filter by quarantine reason"),
-        limit: z.number().int().min(1).max(100).optional().default(DEFAULT_PAGE_SIZE).describe("Max results per page (default 50)"),
-        page: z.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
+        limit: z.coerce.number().int().min(1).max(100).optional().default(DEFAULT_PAGE_SIZE).describe("Max results per page (default 50)"),
+        page: z.coerce.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
       },
       annotations: {
         readOnlyHint: true,
@@ -739,8 +739,8 @@ Args:
       inputSchema: {
         tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
         search: z.string().optional().describe("Search by email address or name"),
-        limit: z.number().int().min(1).max(100).optional().default(DEFAULT_PAGE_SIZE).describe("Max results per page (default 50)"),
-        page: z.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
+        limit: z.coerce.number().int().min(1).max(100).optional().default(DEFAULT_PAGE_SIZE).describe("Max results per page (default 50)"),
+        page: z.coerce.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
       },
       annotations: {
         readOnlyHint: true,

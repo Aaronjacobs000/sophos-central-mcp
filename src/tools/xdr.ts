@@ -225,8 +225,8 @@ Args:
   - page (number, optional): Page number (default 1).`,
       inputSchema: {
         tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
-        limit: z.number().int().min(1).max(MAX_PAGE_SIZE).optional().default(DEFAULT_PAGE_SIZE).describe("Results per page (default 50)"),
-        page: z.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
+        limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).optional().default(DEFAULT_PAGE_SIZE).describe("Results per page (default 50)"),
+        page: z.coerce.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
       },
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     },
@@ -333,8 +333,8 @@ Args:
       inputSchema: {
         tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
         category_id: z.string().optional().describe("Filter by category ID"),
-        limit: z.number().int().min(1).max(MAX_PAGE_SIZE).optional().default(DEFAULT_PAGE_SIZE).describe("Results per page (default 50)"),
-        page: z.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
+        limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).optional().default(DEFAULT_PAGE_SIZE).describe("Results per page (default 50)"),
+        page: z.coerce.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
       },
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     },

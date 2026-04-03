@@ -52,7 +52,7 @@ Returns:
           .describe('ISO 8601 start date e.g. "2025-01-01T00:00:00Z"'),
         to_date: z.string().optional().describe("ISO 8601 end date"),
         severity: z
-          .array(z.number().int())
+          .array(z.coerce.number().int())
           .optional()
           .describe("Filter by severity levels (integers e.g. [4, 8, 9])"),
         sort_direction: z
@@ -233,7 +233,7 @@ Returns:
           .describe('ISO 8601 start date e.g. "2025-01-01T00:00:00Z"'),
         to_date: z.string().optional().describe("ISO 8601 end date"),
         severity: z
-          .array(z.number().int())
+          .array(z.coerce.number().int())
           .optional()
           .describe("Filter by severity levels (integers e.g. [4, 8, 9])"),
         sort_direction: z

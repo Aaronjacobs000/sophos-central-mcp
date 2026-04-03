@@ -424,8 +424,8 @@ Args:
       inputSchema: {
         case_id: z.string().describe("Case ID (e.g. '1-598868')"),
         tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
-        limit: z.number().int().min(1).max(CASES_MAX_PAGE_SIZE).optional().default(CASES_MAX_PAGE_SIZE).describe("Results per page (max 50)"),
-        page: z.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
+        limit: z.coerce.number().int().min(1).max(CASES_MAX_PAGE_SIZE).optional().default(CASES_MAX_PAGE_SIZE).describe("Results per page (max 50)"),
+        page: z.coerce.number().int().min(1).optional().default(1).describe("Page number (default 1)"),
       },
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     },

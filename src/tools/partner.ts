@@ -670,8 +670,8 @@ Args:
 Returns:
   Billing usage details for the specified month.`,
       inputSchema: {
-        year: z.number().int().min(2000).max(2100).describe("Year (e.g. 2026)"),
-        month: z.number().int().min(1).max(12).describe("Month (1-12)"),
+        year: z.coerce.number().int().min(2000).max(2100).describe("Year (e.g. 2026)"),
+        month: z.coerce.number().int().min(1).max(12).describe("Month (1-12)"),
         tenant_id: z
           .string()
           .uuid()
@@ -756,8 +756,8 @@ Args:
 Returns:
   Ranked list of customers with monthly cost, product breakdown, and estate totals.`,
       inputSchema: {
-        year: z.number().int().min(2000).max(2100).describe("Year (e.g. 2026)"),
-        month: z.number().int().min(1).max(12).describe("Month (1-12)"),
+        year: z.coerce.number().int().min(2000).max(2100).describe("Year (e.g. 2026)"),
+        month: z.coerce.number().int().min(1).max(12).describe("Month (1-12)"),
         limit: z
           .number()
           .int()

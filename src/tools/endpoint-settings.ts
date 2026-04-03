@@ -321,7 +321,7 @@ Args:
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
         url: z.string().describe("URL pattern to categorize"),
-        categoryId: z.number().int().describe("Web control category ID"),
+        categoryId: z.coerce.number().int().describe("Web control category ID"),
         comment: z.string().optional().describe("Description or notes"),
         tags: z.array(z.string()).optional().describe("Tags for organizing sites"),
         tenant_id: z
@@ -370,7 +370,7 @@ Args:
       inputSchema: {
         site_id: z.string().uuid().describe("Local site ID to update"),
         url: z.string().optional().describe("Updated URL pattern"),
-        categoryId: z.number().int().optional().describe("Updated web control category ID"),
+        categoryId: z.coerce.number().int().optional().describe("Updated web control category ID"),
         comment: z.string().optional().describe("Updated description"),
         tags: z.array(z.string()).optional().describe("Updated tags"),
         tenant_id: z
@@ -1408,82 +1408,4 @@ Args:
     })
   );
 
-  // =========================================================================
-  // MTR (MDR) SETTINGS
-  // =========================================================================
-
-  server.registerTool(
-    "sophos_get_mtr_settings",
-    {
-      title: "Get Sophos MDR/MTR Settings",
-      description: `Get Managed Detection and Response (MDR/MTR) settings for a tenant.
-
-Returns the current MDR configuration including notification preferences and
-response settings.
-
-Args:
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
-      inputSchema: {
-        tenant_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe("Tenant ID. Required for partner/org callers."),
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ tenant_id }) => {
-      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
-      const data = await client.tenantRequest<Record<string, unknown>>(
-        resolvedTenantId,
-        "/endpoint/v1/settings/mtr",
-        {}
-      );
-      return jsonResult(data);
-    })
-  );
-
-  server.registerTool(
-    "sophos_update_mtr_settings",
-    {
-      title: "Update Sophos MDR/MTR Settings",
-      description: `Update Managed Detection and Response (MDR/MTR) settings for a tenant.
-
-Modify MDR configuration including notification preferences and response settings.
-
-Args:
-  - settings (object): MTR/MDR settings object to apply.
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
-      inputSchema: {
-        settings: z
-          .record(z.unknown())
-          .describe("MTR/MDR settings object to apply"),
-        tenant_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe("Tenant ID. Required for partner/org callers."),
-      },
-      annotations: {
-        readOnlyHint: false,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ settings, tenant_id }) => {
-      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
-      const updated = await client.tenantRequest<Record<string, unknown>>(
-        resolvedTenantId,
-        "/endpoint/v1/settings/mtr",
-        { method: "PATCH", body: settings }
-      );
-      return jsonResult({ status: "updated", settings: updated });
-    })
-  );
 }
