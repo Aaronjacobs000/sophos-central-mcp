@@ -1,7 +1,7 @@
 /**
  * Tools: sophos_list_cloud_security_profiles, sophos_get_cloud_security_profile,
  *        sophos_create_cloud_security_profile, sophos_update_cloud_security_profile,
- *        sophos_delete_cloud_security_profile, sophos_list_cloud_security_assets
+ *        sophos_delete_cloud_security_profile
  * Interact with the Sophos Cloud Security API /cloud-security/v1/
  */
 
@@ -253,71 +253,4 @@ Args:
     })
   );
 
-  // --- List Cloud Security Assets ---
-  server.registerTool(
-    "sophos_list_cloud_security_assets",
-    {
-      title: "List Cloud Security Assets",
-      description: `List cloud security assets discovered across cloud environments.
-
-Args:
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
-  - provider (string, optional): Filter by cloud provider (e.g. "aws", "azure", "gcp").
-  - status (string, optional): Filter by asset status.
-  - limit (number, optional): Max results per page (default 50).
-  - page (number, optional): Page number (default 1).
-
-Returns:
-  Paginated list of cloud security assets.`,
-      inputSchema: {
-        tenant_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe("Tenant ID. Required for partner/org callers."),
-        provider: z
-          .string()
-          .optional()
-          .describe('Filter by cloud provider (e.g. "aws", "azure", "gcp")'),
-        status: z.string().optional().describe("Filter by asset status"),
-        limit: z
-          .number()
-          .int()
-          .min(1)
-          .max(100)
-          .optional()
-          .default(DEFAULT_PAGE_SIZE)
-          .describe("Max results per page (default 50)"),
-        page: z
-          .number()
-          .int()
-          .min(1)
-          .optional()
-          .default(1)
-          .describe("Page number (default 1)"),
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ tenant_id, provider, status, limit, page }) => {
-      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
-      const params: Record<string, string> = {
-        pageSize: String(limit),
-        page: String(page),
-      };
-      if (provider) params.provider = provider;
-      if (status) params.status = status;
-
-      const data = await client.tenantRequest<Record<string, unknown>>(
-        resolvedTenantId,
-        "/cloud-security/v1/assets",
-        { params }
-      );
-      return jsonResult(data);
-    })
-  );
 }

@@ -2,7 +2,7 @@
  * Tools: sophos_list_dns_locations, sophos_get_dns_location,
  *        sophos_create_dns_location, sophos_update_dns_location,
  *        sophos_delete_dns_location
- * Interact with the Sophos DNS Protection API /dns-protection/v1/
+ * Interact with the Sophos DNS Protection API /dns-protection/v2/
  */
 
 import { z } from "zod";
@@ -64,7 +64,7 @@ Returns:
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         resolvedTenantId,
-        "/dns-protection/v1/locations",
+        "/dns-protection/v2/locations",
         { params: { pageSize: String(limit), page: String(page) } }
       );
       return jsonResult(data);
@@ -100,7 +100,7 @@ Args:
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         resolvedTenantId,
-        `/dns-protection/v1/locations/${location_id}`
+        `/dns-protection/v2/locations/${location_id}`
       );
       return jsonResult(data);
     })
@@ -149,7 +149,7 @@ Args:
 
       const data = await client.tenantRequest<Record<string, unknown>>(
         resolvedTenantId,
-        "/dns-protection/v1/locations",
+        "/dns-protection/v2/locations",
         { method: "POST", body }
       );
       return jsonResult({ status: "created", location: data });
@@ -202,7 +202,7 @@ Args:
 
       const data = await client.tenantRequest<Record<string, unknown>>(
         resolvedTenantId,
-        `/dns-protection/v1/locations/${location_id}`,
+        `/dns-protection/v2/locations/${location_id}`,
         { method: "PATCH", body }
       );
       return jsonResult({ status: "updated", location: data });
@@ -240,7 +240,7 @@ Args:
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
       await client.tenantRequest(
         resolvedTenantId,
-        `/dns-protection/v1/locations/${location_id}`,
+        `/dns-protection/v2/locations/${location_id}`,
         { method: "DELETE" }
       );
       return jsonResult({

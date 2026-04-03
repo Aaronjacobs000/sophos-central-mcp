@@ -209,7 +209,7 @@ complex alert queries that go beyond the simple list filters.
 
 Args:
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
-  - filter (object, optional): Search filters. Can include fields like ids, severity, category, product, from, to.
+  - filter (object, optional): Search filters. Values must be arrays e.g. {"category": ["malware"], "severity": ["high", "medium"]}. Supported fields: ids, severity, category, product, from, to.
   - sort (array, optional): Sort criteria e.g. [{"field": "raisedAt", "direction": "desc"}].
   - limit (number, optional): Max results (default 50).
   - page (number, optional): Page number (default 1).`,

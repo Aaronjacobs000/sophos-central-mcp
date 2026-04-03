@@ -1,6 +1,6 @@
 # Sophos Central MCP Server
 
-MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Supports partner, organisation, and single-tenant credential types with automatic region routing. **265 tools** covering 14 Sophos API namespaces.
+MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Supports partner, organisation, and single-tenant credential types with automatic region routing. **257 tools** covering 14 Sophos API namespaces.
 
 ## Quick Start
 
@@ -8,12 +8,32 @@ MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Su
 
 No installation needed. Open your `claude_desktop_config.json` (File > Settings > Developer > Edit Config) and add the `sophos-central` block inside `mcpServers`:
 
+**macOS / Linux:**
+
 ```json
 {
   "mcpServers": {
     "sophos-central": {
       "command": "npx",
       "args": ["-y", "sophos-central-mcp-server"],
+      "env": {
+        "SOPHOS_CLIENT_ID": "your-client-id",
+        "SOPHOS_CLIENT_SECRET": "your-client-secret",
+        "TRANSPORT": "stdio"
+      }
+    }
+  }
+}
+```
+
+**Windows:**
+
+```json
+{
+  "mcpServers": {
+    "sophos-central": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "sophos-central-mcp-server"],
       "env": {
         "SOPHOS_CLIENT_ID": "your-client-id",
         "SOPHOS_CLIENT_SECRET": "your-client-secret",
@@ -32,12 +52,24 @@ Replace `your-client-id` and `your-client-secret` with your [Sophos Central API 
 
 Run this once in your terminal. The `-e` flags save the credentials permanently to Claude Code's MCP config so you don't need to re-export them each session:
 
+**macOS / Linux:**
+
 ```bash
 claude mcp add sophos-central \
   -e SOPHOS_CLIENT_ID="your-client-id" \
   -e SOPHOS_CLIENT_SECRET="your-client-secret" \
   -e TRANSPORT="stdio" \
   -- npx -y sophos-central-mcp-server
+```
+
+**Windows (Command Prompt):**
+
+```cmd
+claude mcp add sophos-central ^
+  -e SOPHOS_CLIENT_ID="your-client-id" ^
+  -e SOPHOS_CLIENT_SECRET="your-client-secret" ^
+  -e TRANSPORT="stdio" ^
+  -- cmd /c npx -y sophos-central-mcp-server
 ```
 
 
@@ -50,7 +82,7 @@ claude mcp add sophos-central \
 - **Token lifecycle**: Automatic OAuth2 token refresh before expiry
 - **Rate limit handling**: Retry with backoff on 429 responses
 - **Dual transport**: Streamable HTTP (for Claude Desktop / Claude Code) or stdio
-- **Full API coverage**: 265 tools across endpoints, alerts, policies, firewalls, email, mobile, XDR, cases, SIEM, and more
+- **Full API coverage**: 257 tools across endpoints, alerts, policies, firewalls, email, mobile, XDR, cases, SIEM, and more
 
 ## Screenshots
 
@@ -374,7 +406,7 @@ Async API — run OSquery SQL on live endpoints. Rate limited to 10 runs/minute,
 | `sophos_search_threat_feed_indicators` | Search threat feed indicators |
 | `sophos_get_threat_feed_indicator` | Get specific threat indicator |
 
-### Email Protection (30 tools)
+### Email Protection (29 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -407,9 +439,8 @@ Async API — run OSquery SQL on live endpoints. Rate limited to 10 runs/minute,
 | `sophos_list_mailbox_delegates` | List mailbox delegates |
 | `sophos_add_mailbox_delegate` | Add a mailbox delegate |
 | `sophos_delete_mailbox_delegate` | Remove a mailbox delegate |
-| `sophos_get_email_settings` | Get email protection settings |
 
-### Mobile Device Management (38 tools)
+### Mobile Device Management (32 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -445,12 +476,6 @@ Async API — run OSquery SQL on live endpoints. Rate limited to 10 runs/minute,
 | `sophos_create_mobile_app_group` | Create an app group |
 | `sophos_update_mobile_app_group` | Update an app group |
 | `sophos_delete_mobile_app_group` | Delete an app group |
-| `sophos_list_mobile_policies` | List mobile policies |
-| `sophos_get_mobile_policy` | Get mobile policy detail |
-| `sophos_update_mobile_policy` | Update a mobile policy |
-| `sophos_list_mobile_profiles` | List mobile profiles |
-| `sophos_get_mobile_profile` | Get mobile profile detail |
-| `sophos_update_mobile_profile` | Update a mobile profile |
 
 ### DNS Protection (5 tools)
 
@@ -462,7 +487,7 @@ Async API — run OSquery SQL on live endpoints. Rate limited to 10 runs/minute,
 | `sophos_update_dns_location` | Update a DNS location |
 | `sophos_delete_dns_location` | Delete a DNS location |
 
-### Cloud Security (6 tools)
+### Cloud Security (5 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -471,7 +496,6 @@ Async API — run OSquery SQL on live endpoints. Rate limited to 10 runs/minute,
 | `sophos_create_cloud_security_profile` | Create a cloud security profile |
 | `sophos_update_cloud_security_profile` | Update a profile |
 | `sophos_delete_cloud_security_profile` | Delete a profile |
-| `sophos_list_cloud_security_assets` | List cloud security assets |
 
 ### Wi-Fi (3 tools)
 

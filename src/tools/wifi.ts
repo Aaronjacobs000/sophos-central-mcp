@@ -63,7 +63,7 @@ Returns:
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         resolvedTenantId,
-        "/wifi/v1/mac-filtering",
+        "/wifi/v1/settings/mac-filtering",
         { params: { pageSize: String(limit), page: String(page) } }
       );
       return jsonResult(data);
@@ -110,7 +110,7 @@ Args:
 
       const data = await client.tenantRequest<Record<string, unknown>>(
         resolvedTenantId,
-        "/wifi/v1/mac-filtering",
+        "/wifi/v1/settings/mac-filtering",
         { method: "POST", body }
       );
       return jsonResult({ status: "created", filter: data });
@@ -146,7 +146,7 @@ Args:
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
       await client.tenantRequest(
         resolvedTenantId,
-        `/wifi/v1/mac-filtering/${filter_id}`,
+        `/wifi/v1/settings/mac-filtering/${filter_id}`,
         { method: "DELETE" }
       );
       return jsonResult({

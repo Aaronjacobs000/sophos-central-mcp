@@ -11,8 +11,7 @@
  *        sophos_list_mailboxes, sophos_create_mailbox, sophos_bulk_create_mailboxes,
  *        sophos_get_mailbox, sophos_update_mailbox, sophos_delete_mailbox,
  *        sophos_list_mailbox_aliases, sophos_add_mailbox_alias, sophos_delete_mailbox_alias,
- *        sophos_list_mailbox_delegates, sophos_add_mailbox_delegate, sophos_delete_mailbox_delegate,
- *        sophos_get_email_settings
+ *        sophos_list_mailbox_delegates, sophos_add_mailbox_delegate, sophos_delete_mailbox_delegate
  * Interact with the Sophos Email API /email/v1/
  */
 
@@ -1188,35 +1187,4 @@ Args:
     })
   );
 
-  // --- Get Email Settings ---
-  server.registerTool(
-    "sophos_get_email_settings",
-    {
-      title: "Get Sophos Email Protection Settings",
-      description: `Get the email protection settings for the tenant.
-
-Returns the current Sophos Email protection configuration including
-spam, malware, and policy settings.
-
-Args:
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
-      inputSchema: {
-        tenant_id: z.string().uuid().optional().describe("Tenant ID. Required for partner/org callers."),
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ tenant_id }) => {
-      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
-      const data = await client.tenantRequest<Record<string, unknown>>(
-        resolvedTenantId,
-        "/email/v1/settings"
-      );
-      return jsonResult(data);
-    })
-  );
 }

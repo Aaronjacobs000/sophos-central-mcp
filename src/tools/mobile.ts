@@ -13,10 +13,7 @@
  *        sophos_locate_mobile_device, sophos_lock_mobile_device, sophos_wipe_mobile_device,
  *        sophos_list_mobile_app_groups, sophos_get_mobile_app_group,
  *        sophos_create_mobile_app_group, sophos_update_mobile_app_group,
- *        sophos_delete_mobile_app_group, sophos_list_mobile_policies,
- *        sophos_get_mobile_policy, sophos_update_mobile_policy,
- *        sophos_list_mobile_profiles, sophos_get_mobile_profile,
- *        sophos_update_mobile_profile
+ *        sophos_delete_mobile_app_group
  * Interact with the Sophos Mobile API /mobile/v1
  */
 
@@ -66,7 +63,7 @@ Returns:
       const tenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         tenantId,
-        "/mobile/v1/auto-enrollment"
+        "/mobile/v1/static-setup-data/ixm-auto-enrollment"
       );
       return jsonResult(data);
     })
@@ -116,7 +113,7 @@ Returns:
 
       const data = await client.tenantRequest<Record<string, unknown>>(
         tenantId,
-        "/mobile/v1/auto-enrollment",
+        "/mobile/v1/static-setup-data/ixm-auto-enrollment",
         { method: "PUT", body }
       );
       return jsonResult(data);
@@ -495,7 +492,7 @@ Returns:
       const tenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         tenantId,
-        `/mobile/v1/devices/${device_id}/compliance`
+        `/mobile/v1/devices/${device_id}/compliance-violations`
       );
       return jsonResult(data);
     })
@@ -533,7 +530,7 @@ Returns:
       const tenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         tenantId,
-        `/mobile/v1/devices/${device_id}/scans`
+        `/mobile/v1/devices/${device_id}/scan-results`
       );
       return jsonResult(data);
     })
@@ -609,7 +606,7 @@ Returns:
       const tenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         tenantId,
-        `/mobile/v1/devices/${device_id}/apps`
+        `/mobile/v1/devices/${device_id}/installed-apps`
       );
       return jsonResult(data);
     })
@@ -923,8 +920,8 @@ Returns:
       const tenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         tenantId,
-        `/mobile/v1/devices/${device_id}/actions/sync`,
-        { method: "POST", body: {} }
+        "/mobile/v1/actions/sync",
+        { method: "POST", body: { endpoints: [device_id] } }
       );
       return jsonResult(data ?? { actionInitiated: true });
     })
@@ -962,8 +959,8 @@ Returns:
       const tenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         tenantId,
-        `/mobile/v1/devices/${device_id}/actions/request-logs`,
-        { method: "POST", body: {} }
+        "/mobile/v1/actions/get-logs",
+        { method: "POST", body: { endpoints: [device_id] } }
       );
       return jsonResult(data ?? { actionInitiated: true });
     })
@@ -1001,8 +998,8 @@ Returns:
       const tenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         tenantId,
-        `/mobile/v1/devices/${device_id}/actions/scan`,
-        { method: "POST", body: {} }
+        "/mobile/v1/actions/scan",
+        { method: "POST", body: { endpoints: [device_id] } }
       );
       return jsonResult(data ?? { actionInitiated: true });
     })
@@ -1042,8 +1039,8 @@ Returns:
       const tenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         tenantId,
-        `/mobile/v1/devices/${device_id}/actions/unenroll`,
-        { method: "POST", body: {} }
+        "/mobile/v1/actions/unenroll",
+        { method: "POST", body: { endpoints: [device_id] } }
       );
       return jsonResult(data ?? { actionInitiated: true });
     })
@@ -1083,8 +1080,8 @@ Returns:
       const tenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         tenantId,
-        `/mobile/v1/devices/${device_id}/actions/send-message`,
-        { method: "POST", body: { message } }
+        "/mobile/v1/actions/send-message",
+        { method: "POST", body: { endpoints: [device_id], message } }
       );
       return jsonResult(data ?? { actionInitiated: true });
     })
@@ -1125,8 +1122,8 @@ Returns:
       const tenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         tenantId,
-        `/mobile/v1/devices/${device_id}/actions/locate`,
-        { method: "POST", body: {} }
+        "/mobile/v1/actions/locate",
+        { method: "POST", body: { endpoints: [device_id] } }
       );
       return jsonResult(data ?? { actionInitiated: true });
     })
@@ -1174,8 +1171,8 @@ Returns:
 
       const data = await client.tenantRequest<Record<string, unknown>>(
         tenantId,
-        `/mobile/v1/devices/${device_id}/actions/lock`,
-        { method: "POST", body }
+        "/mobile/v1/actions/lock",
+        { method: "POST", body: { endpoints: [device_id], ...body } }
       );
       return jsonResult(data ?? { actionInitiated: true });
     })
@@ -1221,8 +1218,8 @@ Returns:
 
       const data = await client.tenantRequest<Record<string, unknown>>(
         tenantId,
-        `/mobile/v1/devices/${device_id}/actions/wipe`,
-        { method: "POST", body }
+        "/mobile/v1/actions/wipe",
+        { method: "POST", body: { endpoints: [device_id], ...body } }
       );
       return jsonResult(data ?? { actionInitiated: true });
     })
@@ -1480,289 +1477,4 @@ Returns:
     })
   );
 
-  // =====================================================================
-  // Mobile Policies
-  // =====================================================================
-
-  // --- List Mobile Policies ---
-  server.registerTool(
-    "sophos_list_mobile_policies",
-    {
-      title: "List Mobile Policies",
-      description: `List mobile policies in Sophos Mobile.
-
-Args:
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
-  - page (number, optional): Page number (default 1).
-  - page_size (number, optional): Results per page (1-100, default 50).
-
-Returns:
-  Paginated list of mobile policies.`,
-      inputSchema: {
-        tenant_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe("Tenant ID. Required for partner/org callers."),
-        page: z
-          .number()
-          .int()
-          .min(1)
-          .optional()
-          .default(1)
-          .describe("Page number (default 1)"),
-        page_size: z
-          .number()
-          .int()
-          .min(1)
-          .max(100)
-          .optional()
-          .default(DEFAULT_PAGE_SIZE)
-          .describe("Results per page (default 50)"),
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ tenant_id, page, page_size }) => {
-      const tenantId = tenantResolver.resolveTenantId(tenant_id);
-      const params: Record<string, string> = {
-        page: String(page),
-        pageSize: String(page_size),
-      };
-      const data = await client.tenantRequest<Record<string, unknown>>(
-        tenantId,
-        "/mobile/v1/policies",
-        { params }
-      );
-      return jsonResult(data);
-    })
-  );
-
-  // --- Get Mobile Policy ---
-  server.registerTool(
-    "sophos_get_mobile_policy",
-    {
-      title: "Get Mobile Policy",
-      description: `Get details of a specific mobile policy.
-
-Args:
-  - policy_id (string): The mobile policy ID.
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
-
-Returns:
-  Mobile policy details including configuration and assignments.`,
-      inputSchema: {
-        policy_id: z.string().describe("Mobile policy ID"),
-        tenant_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe("Tenant ID. Required for partner/org callers."),
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ policy_id, tenant_id }) => {
-      const tenantId = tenantResolver.resolveTenantId(tenant_id);
-      const data = await client.tenantRequest<Record<string, unknown>>(
-        tenantId,
-        `/mobile/v1/policies/${policy_id}`
-      );
-      return jsonResult(data);
-    })
-  );
-
-  // --- Update Mobile Policy ---
-  server.registerTool(
-    "sophos_update_mobile_policy",
-    {
-      title: "Update Mobile Policy",
-      description: `Update a mobile policy in Sophos Mobile.
-
-Args:
-  - policy_id (string): The mobile policy ID.
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
-  - settings (object): Policy settings to update.
-
-Returns:
-  The updated mobile policy.`,
-      inputSchema: {
-        policy_id: z.string().describe("Mobile policy ID"),
-        tenant_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe("Tenant ID. Required for partner/org callers."),
-        settings: z
-          .record(z.unknown())
-          .describe("Policy settings to update"),
-      },
-      annotations: {
-        readOnlyHint: false,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ policy_id, tenant_id, settings }) => {
-      const tenantId = tenantResolver.resolveTenantId(tenant_id);
-      const data = await client.tenantRequest<Record<string, unknown>>(
-        tenantId,
-        `/mobile/v1/policies/${policy_id}`,
-        { method: "PUT", body: settings }
-      );
-      return jsonResult(data);
-    })
-  );
-
-  // =====================================================================
-  // Mobile Profiles
-  // =====================================================================
-
-  // --- List Mobile Profiles ---
-  server.registerTool(
-    "sophos_list_mobile_profiles",
-    {
-      title: "List Mobile Profiles",
-      description: `List mobile profiles in Sophos Mobile.
-
-Args:
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
-  - page (number, optional): Page number (default 1).
-  - page_size (number, optional): Results per page (1-100, default 50).
-
-Returns:
-  Paginated list of mobile profiles.`,
-      inputSchema: {
-        tenant_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe("Tenant ID. Required for partner/org callers."),
-        page: z
-          .number()
-          .int()
-          .min(1)
-          .optional()
-          .default(1)
-          .describe("Page number (default 1)"),
-        page_size: z
-          .number()
-          .int()
-          .min(1)
-          .max(100)
-          .optional()
-          .default(DEFAULT_PAGE_SIZE)
-          .describe("Results per page (default 50)"),
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ tenant_id, page, page_size }) => {
-      const tenantId = tenantResolver.resolveTenantId(tenant_id);
-      const params: Record<string, string> = {
-        page: String(page),
-        pageSize: String(page_size),
-      };
-      const data = await client.tenantRequest<Record<string, unknown>>(
-        tenantId,
-        "/mobile/v1/profiles",
-        { params }
-      );
-      return jsonResult(data);
-    })
-  );
-
-  // --- Get Mobile Profile ---
-  server.registerTool(
-    "sophos_get_mobile_profile",
-    {
-      title: "Get Mobile Profile",
-      description: `Get details of a specific mobile profile.
-
-Args:
-  - profile_id (string): The mobile profile ID.
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
-
-Returns:
-  Mobile profile details including configuration.`,
-      inputSchema: {
-        profile_id: z.string().describe("Mobile profile ID"),
-        tenant_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe("Tenant ID. Required for partner/org callers."),
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ profile_id, tenant_id }) => {
-      const tenantId = tenantResolver.resolveTenantId(tenant_id);
-      const data = await client.tenantRequest<Record<string, unknown>>(
-        tenantId,
-        `/mobile/v1/profiles/${profile_id}`
-      );
-      return jsonResult(data);
-    })
-  );
-
-  // --- Update Mobile Profile ---
-  server.registerTool(
-    "sophos_update_mobile_profile",
-    {
-      title: "Update Mobile Profile",
-      description: `Update a mobile profile in Sophos Mobile.
-
-Args:
-  - profile_id (string): The mobile profile ID.
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
-  - settings (object): Profile settings to update.
-
-Returns:
-  The updated mobile profile.`,
-      inputSchema: {
-        profile_id: z.string().describe("Mobile profile ID"),
-        tenant_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe("Tenant ID. Required for partner/org callers."),
-        settings: z
-          .record(z.unknown())
-          .describe("Profile settings to update"),
-      },
-      annotations: {
-        readOnlyHint: false,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ profile_id, tenant_id, settings }) => {
-      const tenantId = tenantResolver.resolveTenantId(tenant_id);
-      const data = await client.tenantRequest<Record<string, unknown>>(
-        tenantId,
-        `/mobile/v1/profiles/${profile_id}`,
-        { method: "PUT", body: settings }
-      );
-      return jsonResult(data);
-    })
-  );
 }
