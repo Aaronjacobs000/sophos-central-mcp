@@ -125,24 +125,43 @@ Returns:
       title: "Create Sophos Migration Job",
       description: `Create a new endpoint migration job to migrate endpoints between tenants.
 
+This tool handles BOTH sides of a device migration:
+
+1. RECEIVER (destination tenant): Call with name, from_tenant (source tenant UUID),
+   and endpoints (the device UUIDs to migrate). The response includes a "token"
+   field — pass this to the sender.
+
+2. SENDER (source tenant): Call with name, from_tenant (destination tenant UUID),
+   endpoints (same device UUIDs), and token (the value from the receiver response).
+
 Args:
   - name (string): Name for the migration job.
-  - endpoints (array, optional): Array of endpoint IDs to include in the migration.
-  - from_token (string, optional): Migration token from the source tenant.
+  - from_tenant (string, required): The OTHER tenant's UUID — for a receiver this
+    is the source tenant; for a sender this is the destination tenant.
+  - endpoints (array, required): Array of endpoint UUIDs to migrate.
+  - token (string, optional): Handshake token from the receiver job response.
+    Omit when creating the receiver; required when creating the sender.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
 
 Returns:
-  The created migration job details.`,
+  The created migration job details including a "token" field (on receiver jobs).`,
       inputSchema: {
         name: z.string().describe("Migration job name"),
+        from_tenant: z
+          .string()
+          .uuid()
+          .describe(
+            "The other tenant's UUID. For a receiver: the source tenant ID. For a sender: the destination tenant ID."
+          ),
         endpoints: z
-          .array(z.string())
-          .optional()
-          .describe("Endpoint IDs to include in the migration"),
-        from_token: z
+          .array(z.string().uuid())
+          .describe("Endpoint UUIDs to include in the migration"),
+        token: z
           .string()
           .optional()
-          .describe("Migration token from the source tenant"),
+          .describe(
+            "Handshake token from the receiver job response. Omit when creating the receiver; required when creating the sender."
+          ),
         tenant_id: z
           .string()
           .uuid()
@@ -156,21 +175,26 @@ Returns:
         openWorldHint: true,
       },
     },
-    withErrorHandling(async ({ name, endpoints, from_token, tenant_id }) => {
-      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+    withErrorHandling(
+      async ({ name, from_tenant, endpoints, token, tenant_id }) => {
+        const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
 
-      const body: Record<string, unknown> = { name };
-      if (endpoints?.length) body.endpoints = endpoints;
-      if (from_token) body.fromToken = from_token;
+        const body: Record<string, unknown> = {
+          name,
+          fromTenant: from_tenant,
+          endpoints,
+        };
+        if (token) body.token = token;
 
-      const data = await client.tenantRequest<Record<string, unknown>>(
-        resolvedTenantId,
-        "/endpoint/v1/migrations",
-        { method: "POST", body }
-      );
+        const data = await client.tenantRequest<Record<string, unknown>>(
+          resolvedTenantId,
+          "/endpoint/v1/migrations",
+          { method: "POST", body }
+        );
 
-      return jsonResult({ status: "created", migration: data });
-    })
+        return jsonResult({ status: "created", migration: data });
+      }
+    )
   );
 
   // --- Delete Migration ---
