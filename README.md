@@ -1,6 +1,6 @@
 # Sophos Central MCP Server
 
-MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Supports partner, organisation, and single-tenant credential types with automatic region routing. **255 tools** covering 14 Sophos API namespaces.
+MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Supports partner, organisation, and single-tenant credential types with automatic region routing. **259 tools** covering 14 Sophos API namespaces.
 
 ## Quick Start
 
@@ -82,7 +82,7 @@ claude mcp add sophos-central ^
 - **Token lifecycle**: Automatic OAuth2 token refresh before expiry
 - **Rate limit handling**: Retry with backoff on 429 responses
 - **Dual transport**: Streamable HTTP (for Claude Desktop / Claude Code) or stdio
-- **Full API coverage**: 255 tools across endpoints, alerts, policies, firewalls, email, mobile, XDR, cases, SIEM, and more
+- **Full API coverage**: 259 tools across endpoints, alerts, policies, firewalls, email, mobile, XDR, cases, SIEM, and more
 
 ## Screenshots
 
@@ -380,7 +380,7 @@ Async API — run OSquery SQL on live endpoints. Rate limited to 10 runs/minute,
 | `sophos_get_live_discover_run` | Poll Live Discover run status |
 | `sophos_get_live_discover_results` | Fetch Live Discover results |
 
-### Firewall (19 tools)
+### Firewall (23 tools)
 
 | Tool | Description |
 |------|-------------|
@@ -403,6 +403,10 @@ Async API — run OSquery SQL on live endpoints. Rate limited to 10 runs/minute,
 | `sophos_list_threat_feed_indicators` | List threat feed indicators |
 | `sophos_search_threat_feed_indicators` | Search threat feed indicators |
 | `sophos_get_threat_feed_indicator` | Get specific threat indicator |
+| `sophos_export_firewall_config` | Start a config export (backup) of a firewall |
+| `sophos_get_firewall_import_export_transaction` | Poll an export/import transaction |
+| `sophos_download_firewall_backup` | Download a finished backup archive to a local file |
+| `sophos_import_firewall_config` | Upload and import a config archive into firewalls |
 
 ### Email Protection (29 tools)
 
@@ -570,7 +574,7 @@ src/
 │   ├── siem.ts                  # SIEM events and alerts
 │   ├── xdr.ts                   # XDR Data Lake queries (async)
 │   ├── live-discover.ts         # Live Discover queries (async)
-│   ├── firewall.ts              # Firewall CRUD, firmware, groups, threat feed
+│   ├── firewall.ts              # Firewall CRUD, firmware, groups, threat feed, config import/export
 │   ├── email.ts                 # Quarantine, mailboxes, message actions
 │   ├── mobile.ts                # Mobile devices, groups, actions, policies
 │   ├── dns-protection.ts        # DNS locations
