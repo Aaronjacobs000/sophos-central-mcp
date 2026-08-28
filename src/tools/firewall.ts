@@ -1,5 +1,5 @@
 /**
- * Tools: sophos_list_firewalls, sophos_get_firewall, sophos_update_firewall,
+ * Tools: sophos_list_firewalls, sophos_update_firewall,
  *        sophos_delete_firewall, sophos_firewall_action,
  *        sophos_check_firmware_upgrade, sophos_start_firmware_upgrade,
  *        sophos_cancel_firmware_upgrade,
@@ -8,11 +8,12 @@
  *        sophos_delete_firewall_group,
  *        sophos_get_firewall_sync_status,
  *        sophos_get_threat_feed_settings, sophos_update_threat_feed_settings,
- *        sophos_list_threat_feed_indicators, sophos_search_threat_feed_indicators,
- *        sophos_get_threat_feed_indicator,
+ *        sophos_search_threat_feed_indicators,
+ *        sophos_get_firewall_transaction,
  *        sophos_export_firewall_config, sophos_get_firewall_import_export_transaction,
  *        sophos_download_firewall_backup, sophos_import_firewall_config
  * Interact with the Sophos Firewall Management API /firewall/v1/
+ * Paths verified against the firewall-v1 OpenAPI spec (Aug 2026).
  */
 
 import { z } from "zod";
@@ -110,43 +111,10 @@ Args:
     })
   );
 
-  // --- Get Firewall ---
-  server.registerTool(
-    "sophos_get_firewall",
-    {
-      title: "Get Sophos Firewall Detail",
-      description: `Get full details of a specific managed firewall by ID.
-
-Returns complete firewall information including status, firmware version,
-group membership, and connectivity details.
-
-Args:
-  - firewall_id (string): The firewall ID.
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
-      inputSchema: {
-        firewall_id: z.string().uuid().describe("Firewall ID to retrieve"),
-        tenant_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe("Tenant ID. Required for partner/org callers."),
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ firewall_id, tenant_id }) => {
-      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
-      const data = await client.tenantRequest<Record<string, unknown>>(
-        resolvedTenantId,
-        `/firewall/v1/firewalls/${firewall_id}`
-      );
-      return jsonResult(data);
-    })
-  );
+  // NOTE: There is intentionally no sophos_get_firewall tool. The Firewall
+  // Management API does not document GET /firewalls/{firewallId} (verified
+  // against the API spec and live API, which returns 404). Use
+  // sophos_list_firewalls and filter by ID instead.
 
   // --- Update Firewall ---
   server.registerTool(
@@ -253,18 +221,22 @@ Args:
     "sophos_firewall_action",
     {
       title: "Perform Sophos Firewall Action",
-      description: `Perform an action on a managed firewall such as reboot, firmware upgrade
-check, firmware upgrade, or configuration sync.
+      description: `Perform an action on a managed firewall.
+
+The API currently supports exactly one action: "approveManagement", which
+approves the firewall being managed from Sophos Central. Firmware upgrades
+have their own tools (sophos_check_firmware_upgrade,
+sophos_start_firmware_upgrade, sophos_cancel_firmware_upgrade).
 
 Args:
   - firewall_id (string): The firewall ID.
-  - action (string): Action to perform: "reboot", "firmware-upgrade-check", "firmware-upgrade", "sync-config".
+  - action (string): Action to perform. Only "approveManagement" is supported.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
         firewall_id: z.string().uuid().describe("Firewall ID"),
         action: z
-          .enum(["reboot", "firmware-upgrade-check", "firmware-upgrade", "sync-config"])
-          .describe("Action to perform on the firewall"),
+          .enum(["approveManagement"])
+          .describe("Action to perform on the firewall (only approveManagement is supported)"),
         tenant_id: z
           .string()
           .uuid()
@@ -301,13 +273,16 @@ Args:
     "sophos_check_firmware_upgrade",
     {
       title: "Check Sophos Firewall Firmware Upgrade",
-      description: `Check if a firmware upgrade is available for a managed firewall.
+      description: `Check if firmware upgrades are available for one or more managed firewalls.
 
 Args:
-  - firewall_id (string): The firewall ID.
+  - firewall_ids (array): Firewall IDs to check (at least one).
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        firewall_id: z.string().uuid().describe("Firewall ID"),
+        firewall_ids: z
+          .array(z.string().uuid())
+          .min(1)
+          .describe("Firewall IDs to check (at least one)"),
         tenant_id: z
           .string()
           .uuid()
@@ -321,12 +296,12 @@ Args:
         openWorldHint: true,
       },
     },
-    withErrorHandling(async ({ firewall_id, tenant_id }) => {
+    withErrorHandling(async ({ firewall_ids, tenant_id }) => {
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         resolvedTenantId,
-        `/firewall/v1/firewalls/${firewall_id}/firmware/check`,
-        { method: "POST", body: {} }
+        "/firewall/v1/firewalls/actions/firmware-upgrade-check",
+        { method: "POST", body: { firewalls: firewall_ids } }
       );
       return jsonResult(data);
     })
@@ -337,26 +312,31 @@ Args:
     "sophos_start_firmware_upgrade",
     {
       title: "Start Sophos Firewall Firmware Upgrade",
-      description: `Start a firmware upgrade on a managed firewall.
+      description: `Start (or schedule) a firmware upgrade on one or more managed firewalls.
 
-WARNING: This will upgrade the firewall firmware which may cause a brief
+WARNING: This will upgrade firewall firmware which may cause a brief
 service interruption during reboot.
 
 Args:
-  - firewall_id (string): The firewall ID.
-  - version (string, optional): Target firmware version. If omitted, upgrades to latest.
-  - schedule_at (string, optional): ISO 8601 datetime to schedule the upgrade.
+  - firewalls (array): Firewalls to upgrade. Each item: {id (required), upgrade_to_version (optional), upgrade_at (optional ISO 8601 datetime)}.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        firewall_id: z.string().uuid().describe("Firewall ID"),
-        version: z
-          .string()
-          .optional()
-          .describe("Target firmware version (omit for latest)"),
-        schedule_at: z
-          .string()
-          .optional()
-          .describe("ISO 8601 datetime to schedule the upgrade"),
+        firewalls: z
+          .array(
+            z.object({
+              id: z.string().uuid().describe("Firewall ID"),
+              upgrade_to_version: z
+                .string()
+                .optional()
+                .describe("Target firmware version (omit for latest)"),
+              upgrade_at: z
+                .string()
+                .optional()
+                .describe("ISO 8601 datetime to schedule the upgrade"),
+            })
+          )
+          .min(1)
+          .describe("Firewalls to upgrade (at least one)"),
         tenant_id: z
           .string()
           .uuid()
@@ -370,21 +350,26 @@ Args:
         openWorldHint: true,
       },
     },
-    withErrorHandling(async ({ firewall_id, version, schedule_at, tenant_id }) => {
+    withErrorHandling(async ({ firewalls, tenant_id }) => {
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
 
-      const body: Record<string, unknown> = {};
-      if (version) body.version = version;
-      if (schedule_at) body.scheduleAt = schedule_at;
+      const body = {
+        firewalls: firewalls.map((fw) => {
+          const item: Record<string, unknown> = { id: fw.id };
+          if (fw.upgrade_to_version) item.upgradeToVersion = fw.upgrade_to_version;
+          if (fw.upgrade_at) item.upgradeAt = fw.upgrade_at;
+          return item;
+        }),
+      };
 
       const data = await client.tenantRequest<Record<string, unknown>>(
         resolvedTenantId,
-        `/firewall/v1/firewalls/${firewall_id}/firmware/upgrade`,
+        "/firewall/v1/firewalls/actions/firmware-upgrade",
         { method: "POST", body }
       );
       return jsonResult({
         status: "firmware_upgrade_initiated",
-        firewall_id,
+        firewalls: firewalls.map((fw) => fw.id),
         result: data,
       });
     })
@@ -395,13 +380,16 @@ Args:
     "sophos_cancel_firmware_upgrade",
     {
       title: "Cancel Sophos Firewall Firmware Upgrade",
-      description: `Cancel a scheduled or in-progress firmware upgrade on a managed firewall.
+      description: `Cancel scheduled firmware upgrades on one or more managed firewalls.
 
 Args:
-  - firewall_id (string): The firewall ID.
+  - firewall_ids (array): Firewall IDs whose scheduled upgrades should be cancelled.
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        firewall_id: z.string().uuid().describe("Firewall ID"),
+        firewall_ids: z
+          .array(z.string().uuid())
+          .min(1)
+          .describe("Firewall IDs whose scheduled upgrades should be cancelled"),
         tenant_id: z
           .string()
           .uuid()
@@ -415,17 +403,17 @@ Args:
         openWorldHint: true,
       },
     },
-    withErrorHandling(async ({ firewall_id, tenant_id }) => {
+    withErrorHandling(async ({ firewall_ids, tenant_id }) => {
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
       await client.tenantRequest(
         resolvedTenantId,
-        `/firewall/v1/firewalls/${firewall_id}/firmware/upgrade`,
-        { method: "DELETE" }
+        "/firewall/v1/firewalls/actions/firmware-upgrade",
+        { method: "DELETE", params: { ids: firewall_ids.join(",") } }
       );
       return jsonResult({
         status: "firmware_upgrade_cancelled",
-        firewall_id,
-        message: `Firmware upgrade cancelled for firewall ${firewall_id}.`,
+        firewall_ids,
+        message: "Scheduled firmware upgrades cancelled.",
       });
     })
   );
@@ -678,10 +666,50 @@ Args:
   server.registerTool(
     "sophos_get_firewall_sync_status",
     {
-      title: "Get Sophos Firewall Sync Status",
-      description: `Get the configuration sync status of a managed firewall.
+      title: "Get Sophos Firewall Group Sync Status",
+      description: `Get the configuration sync status of the firewalls in a firewall group.
 
-Returns whether the firewall's configuration is in sync with Sophos Central.
+Returns whether each firewall's configuration is in sync with Sophos Central.
+
+Args:
+  - group_id (string): The firewall group ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        group_id: z.string().uuid().describe("Firewall group ID"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ group_id, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+      const data = await client.tenantRequest<Record<string, unknown>>(
+        resolvedTenantId,
+        `/firewall/v1/firewall-groups/${group_id}/firewalls/sync-status`
+      );
+      return jsonResult(data);
+    })
+  );
+
+  // ===== MDR Threat Feed (per-firewall, /firewall-config) =====
+
+  // --- Get Threat Feed Settings ---
+  server.registerTool(
+    "sophos_get_threat_feed_settings",
+    {
+      title: "Get MDR Threat Feed",
+      description: `Get the MDR threat feed configuration and status for a managed firewall.
+
+Returns the current configuration for how MDR threat indicators are pushed
+to the firewall.
 
 Args:
   - firewall_id (string): The firewall ID.
@@ -705,45 +733,7 @@ Args:
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         resolvedTenantId,
-        `/firewall/v1/firewalls/${firewall_id}/sync-status`
-      );
-      return jsonResult(data);
-    })
-  );
-
-  // ===== MDR Threat Feed =====
-
-  // --- Get Threat Feed Settings ---
-  server.registerTool(
-    "sophos_get_threat_feed_settings",
-    {
-      title: "Get MDR Threat Feed Settings",
-      description: `Get the MDR threat feed settings for a tenant's firewall integration.
-
-Returns the current configuration for how threat indicators are pushed
-to managed firewalls.
-
-Args:
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
-      inputSchema: {
-        tenant_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe("Tenant ID. Required for partner/org callers."),
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ tenant_id }) => {
-      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
-      const data = await client.tenantRequest<Record<string, unknown>>(
-        resolvedTenantId,
-        "/firewall/v1/threat-feed/settings"
+        `/firewall/v1/firewall-config/firewalls/${firewall_id}/mdr-threat-feed`
       );
       return jsonResult(data);
     })
@@ -754,12 +744,17 @@ Args:
     "sophos_update_threat_feed_settings",
     {
       title: "Update MDR Threat Feed Settings",
-      description: `Update the MDR threat feed settings for a tenant's firewall integration.
+      description: `Update the MDR threat feed settings on a managed firewall.
+
+Asynchronous: returns a transaction ID. Poll it with
+sophos_get_firewall_transaction.
 
 Args:
+  - firewall_id (string): The firewall ID.
   - settings (object): Settings object to update (passed directly to the API).
   - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
+        firewall_id: z.string().uuid().describe("Firewall ID"),
         settings: z
           .record(z.unknown())
           .describe("Settings object to update"),
@@ -776,78 +771,19 @@ Args:
         openWorldHint: true,
       },
     },
-    withErrorHandling(async ({ settings, tenant_id }) => {
+    withErrorHandling(async ({ firewall_id, settings, tenant_id }) => {
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         resolvedTenantId,
-        "/firewall/v1/threat-feed/settings",
+        `/firewall/v1/firewall-config/firewalls/${firewall_id}/mdr-threat-feed/settings`,
         { method: "PATCH", body: settings }
       );
-      return jsonResult({ status: "updated", settings: data });
-    })
-  );
-
-  // --- List Threat Feed Indicators ---
-  server.registerTool(
-    "sophos_list_threat_feed_indicators",
-    {
-      title: "List MDR Threat Feed Indicators",
-      description: `List threat feed indicators for a tenant's firewall integration.
-
-Returns threat indicators (IPs, domains, URLs) that are pushed to managed
-firewalls for blocking.
-
-Args:
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
-  - limit (number, optional): Max results per page (1-100, default 50).
-  - page (number, optional): Page number (default 1).`,
-      inputSchema: {
-        tenant_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe("Tenant ID. Required for partner/org callers."),
-        limit: z
-          .number()
-          .int()
-          .min(1)
-          .max(100)
-          .optional()
-          .default(DEFAULT_PAGE_SIZE)
-          .describe("Max results per page (default 50)"),
-        page: z
-          .number()
-          .int()
-          .min(1)
-          .optional()
-          .default(1)
-          .describe("Page number (default 1)"),
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ tenant_id, limit, page }) => {
-      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
-
-      const params: Record<string, string> = {
-        pageSize: String(limit),
-        page: String(page),
-      };
-
-      const data = await client.tenantRequest<SophosPagedResponse<Record<string, unknown>>>(
-        resolvedTenantId,
-        "/firewall/v1/threat-feed/indicators",
-        { params }
-      );
-
       return jsonResult({
-        total: data.pages.total ?? data.pages.items ?? data.items.length,
-        page: data.pages.current ?? page,
-        indicators: data.items,
+        status: "update_submitted",
+        firewall_id,
+        result: data,
+        next_step:
+          "Poll sophos_get_firewall_transaction with the returned transactionId for the outcome.",
       });
     })
   );
@@ -857,20 +793,19 @@ Args:
     "sophos_search_threat_feed_indicators",
     {
       title: "Search MDR Threat Feed Indicators",
-      description: `Search threat feed indicators with filters and sorting.
+      description: `Search the MDR threat feed indicators on a managed firewall.
 
-Performs a server-side search across threat indicators using filter criteria.
+Asynchronous: returns a transaction ID. Poll it with
+sophos_get_firewall_transaction; the finished transaction carries the
+matching indicators.
 
 Args:
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.
+  - firewall_id (string): The firewall ID.
   - filter (object, optional): Filter criteria object.
-  - sort (array, optional): Sort criteria array.`,
+  - sort (array, optional): Sort criteria array.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
       inputSchema: {
-        tenant_id: z
-          .string()
-          .uuid()
-          .optional()
-          .describe("Tenant ID. Required for partner/org callers."),
+        firewall_id: z.string().uuid().describe("Firewall ID"),
         filter: z
           .record(z.unknown())
           .optional()
@@ -879,45 +814,6 @@ Args:
           .array(z.unknown())
           .optional()
           .describe("Sort criteria array"),
-      },
-      annotations: {
-        readOnlyHint: true,
-        destructiveHint: false,
-        idempotentHint: true,
-        openWorldHint: true,
-      },
-    },
-    withErrorHandling(async ({ tenant_id, filter, sort }) => {
-      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
-
-      const body: Record<string, unknown> = {};
-      if (filter) body.filter = filter;
-      if (sort) body.sort = sort;
-
-      const data = await client.tenantRequest<Record<string, unknown>>(
-        resolvedTenantId,
-        "/firewall/v1/threat-feed/indicators/search",
-        { method: "POST", body }
-      );
-      return jsonResult(data);
-    })
-  );
-
-  // --- Get Threat Feed Indicator ---
-  server.registerTool(
-    "sophos_get_threat_feed_indicator",
-    {
-      title: "Get MDR Threat Feed Indicator",
-      description: `Get a specific threat feed indicator by ID.
-
-Returns full details of a single threat indicator including type, value,
-severity, and associated metadata.
-
-Args:
-  - indicator_id (string): The indicator ID.
-  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
-      inputSchema: {
-        indicator_id: z.string().uuid().describe("Threat feed indicator ID"),
         tenant_id: z
           .string()
           .uuid()
@@ -931,11 +827,58 @@ Args:
         openWorldHint: true,
       },
     },
-    withErrorHandling(async ({ indicator_id, tenant_id }) => {
+    withErrorHandling(async ({ firewall_id, filter, sort, tenant_id }) => {
+      const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
+
+      const body: Record<string, unknown> = {};
+      if (filter) body.filter = filter;
+      if (sort) body.sort = sort;
+
+      const data = await client.tenantRequest<Record<string, unknown>>(
+        resolvedTenantId,
+        `/firewall/v1/firewall-config/firewalls/${firewall_id}/mdr-threat-feed/indicators/search`,
+        { method: "POST", body }
+      );
+      return jsonResult(data);
+    })
+  );
+
+  // --- Get Firewall Transaction (per-firewall operations) ---
+  server.registerTool(
+    "sophos_get_firewall_transaction",
+    {
+      title: "Get Sophos Firewall Transaction",
+      description: `Poll a per-firewall transaction (MDR threat feed operations).
+
+For configuration import/export transactions use
+sophos_get_firewall_import_export_transaction instead; those are polled on a
+shared endpoint without a firewall ID.
+
+Args:
+  - firewall_id (string): The firewall ID the transaction belongs to.
+  - transaction_id (string): The transaction ID.
+  - tenant_id (string, optional): Tenant ID. Required for partner/org callers.`,
+      inputSchema: {
+        firewall_id: z.string().uuid().describe("Firewall ID"),
+        transaction_id: z.string().describe("Transaction ID"),
+        tenant_id: z
+          .string()
+          .uuid()
+          .optional()
+          .describe("Tenant ID. Required for partner/org callers."),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    withErrorHandling(async ({ firewall_id, transaction_id, tenant_id }) => {
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         resolvedTenantId,
-        `/firewall/v1/threat-feed/indicators/${indicator_id}`
+        `/firewall/v1/firewall-config/firewalls/${firewall_id}/transactions/${transaction_id}`
       );
       return jsonResult(data);
     })
@@ -1022,7 +965,7 @@ Args:
 
         const data = await client.tenantRequest<{ transactionId: string }>(
           resolvedTenantId,
-          `/firewall/v1/firewalls/${firewall_id}/export`,
+          `/firewall/v1/firewall-config/firewalls/${firewall_id}/export`,
           { method: "POST", body }
         );
 
@@ -1073,7 +1016,7 @@ Args:
       const resolvedTenantId = tenantResolver.resolveTenantId(tenant_id);
       const data = await client.tenantRequest<Record<string, unknown>>(
         resolvedTenantId,
-        `/firewall/v1/firewalls/transactions/${transaction_id}`
+        `/firewall/v1/firewall-config/firewalls/transactions/${transaction_id}`
       );
       return jsonResult(data);
     })
@@ -1124,7 +1067,7 @@ Args:
         status?: string;
         result?: string;
         response?: { url?: string; method?: string; expiresAt?: string; firewallId?: string };
-      }>(resolvedTenantId, `/firewall/v1/firewalls/transactions/${transaction_id}`);
+      }>(resolvedTenantId, `/firewall/v1/firewall-config/firewalls/transactions/${transaction_id}`);
 
       if (txn.status !== "finished") {
         return jsonResult({
@@ -1229,7 +1172,7 @@ Args:
           url: string;
           method?: string;
           expiresAt?: string;
-        }>(resolvedTenantId, "/firewall/v1/firewalls/import", { method: "POST" });
+        }>(resolvedTenantId, "/firewall/v1/firewall-config/firewalls/import", { method: "POST" });
 
         // Step 2: upload the archive to the pre-signed URL (plain fetch, no Sophos auth headers).
         const upload = await fetch(init.url, {
@@ -1253,7 +1196,7 @@ Args:
 
         const txn = await client.tenantRequest<Record<string, unknown>>(
           resolvedTenantId,
-          `/firewall/v1/firewalls/import/${init.transactionId}/upload-complete`,
+          `/firewall/v1/firewall-config/firewalls/import/${init.transactionId}/upload-complete`,
           { method: "POST", body }
         );
 

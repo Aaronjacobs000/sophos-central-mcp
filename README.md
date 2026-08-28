@@ -1,6 +1,6 @@
 # Sophos Central MCP Server
 
-MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Supports partner, organisation, and single-tenant credential types with automatic region routing. **259 tools** covering 14 Sophos API namespaces.
+MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Supports partner, organisation, and single-tenant credential types with automatic region routing. **288 tools** covering 20 Sophos API namespaces.
 
 ## Quick Start
 
@@ -82,7 +82,7 @@ claude mcp add sophos-central ^
 - **Token lifecycle**: Automatic OAuth2 token refresh before expiry
 - **Rate limit handling**: Retry with backoff on 429 responses
 - **Dual transport**: Streamable HTTP (for Claude Desktop / Claude Code) or stdio
-- **Full API coverage**: 259 tools across endpoints, alerts, policies, firewalls, email, mobile, XDR, cases, SIEM, and more
+- **Full API coverage**: 288 tools across endpoints, alerts, policies, firewalls, web filtering, licensing, audit events, email, mobile, XDR, cases, SIEM, and more
 
 ## Screenshots
 
@@ -380,33 +380,34 @@ Async API — run OSquery SQL on live endpoints. Rate limited to 10 runs/minute,
 | `sophos_get_live_discover_run` | Poll Live Discover run status |
 | `sophos_get_live_discover_results` | Fetch Live Discover results |
 
-### Firewall (23 tools)
+### Firewall (21 tools)
 
 | Tool | Description |
 |------|-------------|
 | `sophos_list_firewalls` | List managed firewalls |
-| `sophos_get_firewall` | Get firewall detail |
 | `sophos_update_firewall` | Update firewall properties |
 | `sophos_delete_firewall` | Delete a firewall |
-| `sophos_firewall_action` | Perform action (reboot, sync, upgrade check) |
-| `sophos_check_firmware_upgrade` | Check for firmware upgrades |
-| `sophos_start_firmware_upgrade` | Start a firmware upgrade |
-| `sophos_cancel_firmware_upgrade` | Cancel a firmware upgrade |
+| `sophos_firewall_action` | Perform an action (approveManagement, the only documented action) |
+| `sophos_check_firmware_upgrade` | Check firmware upgrades for a set of firewalls |
+| `sophos_start_firmware_upgrade` | Start or schedule firmware upgrades |
+| `sophos_cancel_firmware_upgrade` | Cancel scheduled firmware upgrades |
 | `sophos_list_firewall_groups` | List firewall groups |
 | `sophos_get_firewall_group` | Get firewall group detail |
 | `sophos_create_firewall_group` | Create a firewall group |
 | `sophos_update_firewall_group` | Update a firewall group |
 | `sophos_delete_firewall_group` | Delete a firewall group |
-| `sophos_get_firewall_sync_status` | Get firewall sync status |
-| `sophos_get_threat_feed_settings` | Get MDR threat feed settings |
-| `sophos_update_threat_feed_settings` | Update threat feed settings |
-| `sophos_list_threat_feed_indicators` | List threat feed indicators |
-| `sophos_search_threat_feed_indicators` | Search threat feed indicators |
-| `sophos_get_threat_feed_indicator` | Get specific threat indicator |
+| `sophos_get_firewall_sync_status` | Get sync status of the firewalls in a group |
+| `sophos_get_threat_feed_settings` | Get a firewall's MDR threat feed |
+| `sophos_update_threat_feed_settings` | Update a firewall's MDR threat feed settings |
+| `sophos_search_threat_feed_indicators` | Search a firewall's MDR threat feed indicators |
+| `sophos_get_firewall_transaction` | Poll a per-firewall transaction (threat feed ops) |
 | `sophos_export_firewall_config` | Start a config export (backup) of a firewall |
 | `sophos_get_firewall_import_export_transaction` | Poll an export/import transaction |
 | `sophos_download_firewall_backup` | Download a finished backup archive to a local file |
 | `sophos_import_firewall_config` | Upload and import a config archive into firewalls |
+
+Config import/export requires the firewall to run SFOS v22 MR2 or later, be
+managed by Sophos Central, and hold an active license.
 
 ### Email Protection (29 tools)
 
@@ -513,6 +514,69 @@ Async API — run OSquery SQL on live endpoints. Rate limited to 10 runs/minute,
 |------|-------------|
 | `sophos_create_attestation` | Create a user attestation/sign-off |
 | `sophos_get_attestation` | Get attestation detail |
+
+### Audit Events (1 tool)
+
+| Tool | Description |
+|------|-------------|
+| `sophos_list_audit_events` | List Sophos Central audit events (who did what, 90-day window) |
+
+### Licensing (2 tools)
+
+| Tool | Description |
+|------|-------------|
+| `sophos_list_licenses` | List a tenant's product licenses, usage, and entitlements |
+| `sophos_list_firewall_licenses` | List firewall license details (tenant or partner-wide) |
+
+### Web Filtering (16 tools)
+
+| Tool | Description |
+|------|-------------|
+| `sophos_list_web_filtering_profiles` | List web filtering profiles |
+| `sophos_get_web_filtering_profile` | Get a web filtering profile |
+| `sophos_create_web_filtering_profile` | Create a web filtering profile |
+| `sophos_update_web_filtering_profile` | Update (replace) a web filtering profile |
+| `sophos_delete_web_filtering_profile` | Delete a web filtering profile |
+| `sophos_clone_web_filtering_profile` | Clone a web filtering profile |
+| `sophos_get_web_filtering_metadata` | Get categories, groups, and presets |
+| `sophos_list_site_lists` | List site lists |
+| `sophos_get_site_list` | Get a site list |
+| `sophos_create_site_list` | Create a site list |
+| `sophos_update_site_list` | Update (replace) a site list |
+| `sophos_delete_site_list` | Delete a site list |
+| `sophos_clone_site_list` | Clone a site list |
+| `sophos_list_sites` | List the sites in a site list |
+| `sophos_add_site` | Add a site to a site list |
+| `sophos_delete_site` | Delete a site from a site list |
+
+### Switch Management (3 tools)
+
+| Tool | Description |
+|------|-------------|
+| `sophos_get_switch_mac_filtering` | Get global switch MAC filtering settings |
+| `sophos_update_switch_mac_filtering` | Replace the switch MAC filtering address list |
+| `sophos_list_switch_tasks` | List switch configuration tasks |
+
+### Accounts / Access Tokens (4 tools)
+
+| Tool | Description |
+|------|-------------|
+| `sophos_list_access_tokens` | List repository access tokens |
+| `sophos_create_access_token` | Create a repository access token (Sophos Linux Sensor) |
+| `sophos_update_access_token` | Update a token's label or expiry |
+| `sophos_revoke_access_token` | Revoke a token |
+
+### Business Automation (4 tools)
+
+Distributor-scoped: requires distributor-entitled credentials and an
+X-Distributor-ID.
+
+| Tool | Description |
+|------|-------------|
+| `sophos_list_ba_quotes` | List distributor quotes (new, amendment, renewal) |
+| `sophos_get_ba_quote` | Get a quote by proposal number |
+| `sophos_get_ba_partner_levels` | Partner program levels for a billing sub-region |
+| `sophos_get_ba_pricing` | Price a set of product lines for a reseller |
 
 ### Tenant context
 
