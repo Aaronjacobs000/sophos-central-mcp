@@ -42,6 +42,12 @@ import { registerWifiTools } from "./tools/wifi.js";
 import { registerUserActivityTools } from "./tools/user-activity.js";
 import { registerPartnerTools } from "./tools/partner.js";
 import { registerMobileTools } from "./tools/mobile.js";
+import { registerAuditEventTools } from "./tools/audit-events.js";
+import { registerLicensingTools } from "./tools/licensing.js";
+import { registerWebFilteringTools } from "./tools/web-filtering.js";
+import { registerSwitchTools } from "./tools/switch.js";
+import { registerAccountsTools } from "./tools/accounts.js";
+import { registerBusinessAutomationTools } from "./tools/business-automation.js";
 
 async function main(): Promise<void> {
   // Load and validate config
@@ -119,6 +125,15 @@ async function main(): Promise<void> {
 
   // Phase 10: Mobile device management tools
   registerMobileTools(server, sophosClient, tenantResolver);
+
+  // Phase 11: Audit events, licensing, web filtering, switch, accounts,
+  // business automation
+  registerAuditEventTools(server, sophosClient, tenantResolver);
+  registerLicensingTools(server, sophosClient, tenantResolver);
+  registerWebFilteringTools(server, sophosClient, tenantResolver);
+  registerSwitchTools(server, sophosClient, tenantResolver);
+  registerAccountsTools(server, sophosClient, tenantResolver);
+  registerBusinessAutomationTools(server, sophosClient, tenantResolver);
 
   console.error("[sophos-mcp] All tools registered.");
 
