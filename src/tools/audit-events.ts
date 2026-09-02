@@ -10,6 +10,21 @@ import type { TenantResolver } from "../client/tenant-resolver.js";
 import { jsonResult, withErrorHandling } from "./helpers.js";
 import { DEFAULT_PAGE_SIZE } from "../config/config.js";
 
+
+/**
+ * The upstream Audit Events API rejects date-only strings ("2026-08-26")
+ * with a 400; it needs full ISO 8601 datetimes. Accept date-only input and
+ * normalise it: start dates to midnight UTC, end dates to end of day UTC.
+ */
+function normaliseAuditDate(value: string, kind: "start" | "end"): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return kind === "start"
+      ? `${value}T00:00:00.000Z`
+      : `${value}T23:59:59.999Z`;
+  }
+  return value;
+}
+
 export function registerAuditEventTools(
   server: McpServer,
   client: SophosClient,
@@ -31,8 +46,8 @@ at the caller's own level (partner, organization, or tenant depending on the
 credentials).
 
 Args:
-  - start_date (string): Start date (ISO 8601), no earlier than 90 days ago.
-  - end_date (string, optional): Up to this end date (ISO 8601).
+  - start_date (string): Start date (ISO 8601), no earlier than 90 days ago. A date-only value like "2026-08-26" is accepted and treated as midnight UTC.
+  - end_date (string, optional): Up to this end date (ISO 8601). A date-only value is treated as end of that day UTC.
   - origin_ip_address (string, optional): Filter by origin IP address.
   - modified_by (string, optional): Filter by modifier's email.
   - modifier_account_id (string, optional): Filter by modifier account ID.
@@ -43,8 +58,8 @@ Args:
       inputSchema: {
         start_date: z
           .string()
-          .describe("Start date (ISO 8601), no earlier than 90 days ago"),
-        end_date: z.string().optional().describe("Up to this end date (ISO 8601)"),
+          .describe("Start date (ISO 8601 datetime, or YYYY-MM-DD treated as midnight UTC), no earlier than 90 days ago"),
+        end_date: z.string().optional().describe("Up to this end date (ISO 8601 datetime, or YYYY-MM-DD treated as end of day UTC)"),
         origin_ip_address: z
           .string()
           .optional()
@@ -96,10 +111,10 @@ Args:
         tenant_id,
       }) => {
         const params: Record<string, string> = {
-          startDate: start_date,
+          startDate: normaliseAuditDate(start_date, "start"),
           pageSize: String(limit),
         };
-        if (end_date) params.endDate = end_date;
+        if (end_date) params.endDate = normaliseAuditDate(end_date, "end");
         if (origin_ip_address) params.originIpAddress = origin_ip_address;
         if (modified_by) params.modifiedBy = modified_by;
         if (modifier_account_id) params.modifierAccountId = modifier_account_id;

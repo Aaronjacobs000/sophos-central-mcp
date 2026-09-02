@@ -7,6 +7,10 @@
  */
 
 import "dotenv/config";
+import { createRequire } from "node:module";
+
+const nodeRequire = createRequire(import.meta.url);
+const pkgVersion: string = nodeRequire("../package.json").version;
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -72,7 +76,7 @@ async function main(): Promise<void> {
   // Create the MCP server
   const server = new McpServer({
     name: "sophos-central-mcp-server",
-    version: "0.2.4",
+    version: pkgVersion,
   });
 
   // Register tools based on identity type
