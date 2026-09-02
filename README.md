@@ -407,7 +407,11 @@ Async API — run OSquery SQL on live endpoints. Rate limited to 10 runs/minute,
 | `sophos_import_firewall_config` | Upload and import a config archive into firewalls |
 
 Config import/export requires the firewall to run SFOS v22 MR2 or later, be
-managed by Sophos Central, and hold an active license.
+managed by Sophos Central, and hold an active license. On an HA pair, target
+the primary node (the auxiliary rejects config operations). The exported
+archive can appear in storage a couple of minutes after the transaction
+reports finished; `sophos_download_firewall_backup` retries automatically
+for about 3 minutes to cover that window.
 
 ### Email Protection (29 tools)
 

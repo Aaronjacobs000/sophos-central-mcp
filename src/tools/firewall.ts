@@ -902,6 +902,9 @@ FirewallRule, NATRule, WebFilterPolicy, VPNIPSecConnection, Certificate.
 See the ExportableEntity list in the Firewall Management API guide for all
 valid entity names.
 
+On a firewall running as an HA pair, target the PRIMARY node. The auxiliary
+node rejects exports with "Configuration not allowed on auxiliary firewall".
+
 Args:
   - firewall_id (string): The firewall ID to export.
   - full_export (boolean, optional): Export the full configuration (default true).
@@ -1033,6 +1036,10 @@ Checks the export transaction; if the export has finished, downloads the
 archive from its pre-signed URL and saves it to output_path. If the export
 is still running, returns the current status so you can retry shortly.
 
+The archive can appear in storage up to a couple of minutes AFTER the
+transaction reports finished; this tool retries the download automatically
+for about 3 minutes before failing, so a single call normally suffices.
+
 Typical flow: sophos_export_firewall_config, then call this tool with the
 returned transaction_id.
 
@@ -1087,10 +1094,28 @@ Args:
       }
 
       // Pre-signed URL: plain fetch, no Sophos auth headers.
-      const dl = await fetch(downloadUrl);
+      // The storage object can lag the "finished" transaction status by a
+      // couple of minutes, so a 404 from an unexpired URL means "not there
+      // yet", not "expired". Retry before failing.
+      const RETRY_DELAY_MS = 15_000;
+      const MAX_ATTEMPTS = 13;
+      const expiresAt = txn.response?.expiresAt;
+      const urlExpired = () =>
+        expiresAt !== undefined && Date.now() > Date.parse(expiresAt);
+      let dl = await fetch(downloadUrl);
+      for (
+        let attempt = 1;
+        !dl.ok && dl.status === 404 && !urlExpired() && attempt < MAX_ATTEMPTS;
+        attempt++
+      ) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+        dl = await fetch(downloadUrl);
+      }
       if (!dl.ok) {
         throw new Error(
-          `Backup download failed (${dl.status}). The pre-signed URL may have expired (expiresAt: ${txn.response?.expiresAt}). Re-run sophos_export_firewall_config.`
+          dl.status === 404 && !urlExpired()
+            ? `Backup download failed (404): the transaction reports finished but the archive has not appeared in storage yet, even after retrying for ~${Math.round((RETRY_DELAY_MS * (MAX_ATTEMPTS - 1)) / 60000)} minutes. Retry this tool shortly; the pre-signed URL is valid until ${expiresAt}.`
+            : `Backup download failed (${dl.status}). The pre-signed URL may have expired (expiresAt: ${expiresAt}). Re-run sophos_export_firewall_config.`
         );
       }
       const bytes = Buffer.from(await dl.arrayBuffer());
