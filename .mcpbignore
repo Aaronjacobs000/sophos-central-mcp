@@ -1,0 +1,8 @@
+# Extra exclusions applied when scripts/build-mcpb.mjs packs build/mcpb/.
+# The mcpb CLI already drops *.map, *.d.ts, package-lock.json, tsconfig.json,
+# .env* and node_modules/.bin on its own. These trim test fixtures and CI
+# config that ship inside some dependencies and are never loaded at runtime.
+**/test/
+**/tests/
+**/__tests__/
+**/.github/

@@ -2,3 +2,8 @@ node_modules/
 dist/
 .env
 *.tgz
+
+# MCPB bundle build output (npm run build:mcpb)
+build/
+release/
+*.mcpb
