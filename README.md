@@ -217,7 +217,6 @@ TRANSPORT=http
 |----------|----------|---------|-------------|
 | `SOPHOS_CLIENT_ID` | Yes | - | OAuth2 client ID |
 | `SOPHOS_CLIENT_SECRET` | Yes | - | OAuth2 client secret |
-| `SOPHOS_TENANT_ID` | No | - | Lock to a single tenant (useful for tenant-level creds) |
 | `PORT` | No | 3100 | HTTP server port |
 | `TRANSPORT` | No | http | `http` for streamable HTTP, `stdio` for subprocess mode |
 | `CHARACTER_LIMIT` | No | 50000 | Maximum characters per tool response before truncation (minimum 10000) |

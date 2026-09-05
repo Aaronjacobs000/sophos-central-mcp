@@ -34,7 +34,8 @@ const outFile = join(releaseDir, `${pkg.name}-${pkg.version}.mcpb`);
 
 // Files copied verbatim into the staging directory. dist/ is copied as a tree.
 // package.json must ship: dist/index.js reads its version at startup.
-const stagedFiles = ["manifest.json", "package.json", "package-lock.json", "LICENSE", ".mcpbignore"];
+// icon.png is referenced by manifest.json ("icon") and must sit next to it.
+const stagedFiles = ["manifest.json", "package.json", "package-lock.json", "LICENSE", "icon.png", ".mcpbignore"];
 
 function fail(message) {
   console.error(`[build-mcpb] ${message}`);

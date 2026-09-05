@@ -16,6 +16,7 @@
   "homepage": "https://github.com/Aaronjacobs000/sophos-central-mcp",
   "documentation": "https://github.com/Aaronjacobs000/sophos-central-mcp#readme",
   "support": "https://github.com/Aaronjacobs000/sophos-central-mcp/issues",
+  "icon": "icon.png",
   "server": {
     "type": "node",
     "entry_point": "dist/index.js",
@@ -1211,6 +1212,9 @@
     "xdr"
   ],
   "license": "MIT",
+  "privacy_policies": [
+    "https://sophos.com/trust"
+  ],
   "compatibility": {
     "platforms": [
       "darwin",
