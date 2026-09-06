@@ -1,56 +1,49 @@
 # Sophos Central MCP Server
 
-MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Supports partner, organisation, and single-tenant credential types with automatic region routing. **288 tools** covering 20 Sophos API namespaces.
+MCP (Model Context Protocol) server for interacting with Sophos Central APIs. Supports partner, organisation, and single-tenant credential types with automatic region routing. **288 tools** covering 20 Sophos API namespaces. Install it as a Claude Desktop extension (`.mcpb`), run it with npx, or host it yourself over streamable HTTP.
 
-## Quick Start
+## Prerequisites
 
-### Claude Desktop
+You need these before any of the install options below.
 
-No installation needed. Open your `claude_desktop_config.json` (File > Settings > Developer > Edit Config) and add the `sophos-central` block inside `mcpServers`:
+### Sophos Central API credentials
 
-**macOS / Linux:**
+Every install method needs a Client ID and Client Secret. The credential type decides what the server can see:
 
-```json
-{
-  "mcpServers": {
-    "sophos-central": {
-      "command": "npx",
-      "args": ["-y", "sophos-central-mcp-server"],
-      "env": {
-        "SOPHOS_CLIENT_ID": "your-client-id",
-        "SOPHOS_CLIENT_SECRET": "your-client-secret",
-        "TRANSPORT": "stdio"
-      }
-    }
-  }
-}
-```
+- **Tenant-level**: In Sophos Central, go to **Settings > API Credentials Management** and create a new credential. The server operates on that one tenant.
+- **Partner-level**: In the Sophos Partner Dashboard, create API credentials under **Settings > API Credentials**. The server can query every tenant the partner manages.
+- **Organisation-level**: In Sophos Central Enterprise, use **Global Settings > API Credentials Management**. Same cross-tenant behaviour as partner credentials.
 
-**Windows:**
+### Node.js 20 or later (npm and self-hosted installs only)
 
-```json
-{
-  "mcpServers": {
-    "sophos-central": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "sophos-central-mcp-server"],
-      "env": {
-        "SOPHOS_CLIENT_ID": "your-client-id",
-        "SOPHOS_CLIENT_SECRET": "your-client-secret",
-        "TRANSPORT": "stdio"
-      }
-    }
-  }
-}
-```
+The `.mcpb` bundle for Claude Desktop does not need Node.js on your machine: Claude Desktop ships its own Node.js runtime and the bundle carries the server and all of its dependencies. Install Node.js 20+ only if you use the Claude Code or self-hosted options.
 
-> **If you already have other MCP servers configured**, don't replace the whole file — just add the `"sophos-central": { ... }` entry alongside your existing servers inside the `"mcpServers"` object.
+## Install
 
-Replace `your-client-id` and `your-client-secret` with your [Sophos Central API credentials](#creating-api-credentials). Restart Claude Desktop after saving — it will download and run the server automatically on first use.
+Pick one:
 
-### Claude Code
+| Option | Best for | Needs Node.js? |
+|--------|----------|----------------|
+| [Claude Desktop extension (.mcpb)](#option-1-claude-desktop-extension-mcpb-recommended) | Claude Desktop users who want a two-minute install | No |
+| [Claude Code](#option-2-claude-code) | Terminal use with Claude Code | Yes |
+| [Self-hosted with npm](#option-3-self-hosted-with-npm-streamable-http-or-stdio) | Running the server yourself for any MCP client, over streamable HTTP or stdio | Yes |
 
-Run this once in your terminal. The `-e` flags save the credentials permanently to Claude Code's MCP config so you don't need to re-export them each session:
+### Option 1: Claude Desktop extension (.mcpb, recommended)
+
+The `.mcpb` file is an [MCP Bundle](https://github.com/modelcontextprotocol/mcpb): a zip containing the built server, its production dependencies, and a manifest that tells Claude Desktop how to run it and which settings to ask for. No terminal and no config file edits.
+
+1. Download `sophos-central-mcp-server-<version>.mcpb` from the [latest GitHub release](https://github.com/Aaronjacobs000/sophos-central-mcp/releases/latest).
+2. Open the file with Claude Desktop. Double-clicking it works on macOS and Windows. You can also go to **Settings > Extensions > Advanced settings**, find the **Extension Developer** section, click **Install Extension...** and pick the file.
+3. Claude Desktop shows the extension details and asks for your **Sophos Central Client ID** and **Client Secret**. Both fields are marked sensitive in the manifest, so Claude Desktop keeps them in the operating system's secure storage instead of a config file.
+4. Click **Install**, make sure the extension is enabled, then start a new chat. The `sophos_*` tools are available straight away.
+
+To update, download the newer `.mcpb` and install it the same way. To remove it, open **Settings > Extensions** and uninstall the extension.
+
+The bundle runs the server in stdio mode and sets `TRANSPORT=stdio` for you. Which tools you get depends on the credential type, exactly as with the other install options: partner and organisation credentials unlock the cross-tenant tools, tenant credentials do not.
+
+### Option 2: Claude Code
+
+Requires Node.js. Run this once in your terminal. The `-e` flags save the credentials permanently to Claude Code's MCP config so you don't need to re-export them each session:
 
 **macOS / Linux:**
 
@@ -72,16 +65,82 @@ claude mcp add sophos-central ^
   -- cmd /c npx -y sophos-central-mcp-server
 ```
 
+### Option 3: Self-hosted with npm (streamable HTTP or stdio)
+
+Use this when you want to run the server yourself, on a workstation, a jump box, or in a container, for any MCP client that speaks streamable HTTP or can spawn a stdio process. Nothing here depends on the `.mcpb` bundle.
+
+**Install from npm:**
+
+```bash
+npm install -g sophos-central-mcp-server
+```
+
+**Or from source:**
+
+```bash
+git clone https://github.com/Aaronjacobs000/sophos-central-mcp.git
+cd sophos-central-mcp
+npm install
+npm run build
+```
+
+**Configure.** Either export the variables in your shell or put them in a `.env` file in the directory you start the server from. The full table is under [Configuration](#configuration).
+
+```
+SOPHOS_CLIENT_ID=your-client-id
+SOPHOS_CLIENT_SECRET=your-client-secret
+PORT=3100
+TRANSPORT=http
+```
+
+**Run:**
+
+```bash
+sophos-central-mcp      # global npm install
+npm start               # from a source checkout
+```
+
+With `TRANSPORT=http` (the default) the server listens on `http://127.0.0.1:3100/mcp` and answers `GET /health` with `{"status":"ok"}`. The MCP endpoint is stateless: every request gets a fresh transport. Point any streamable HTTP client at it, for example Claude Code:
+
+```bash
+claude mcp add --transport http sophos-central http://127.0.0.1:3100/mcp
+```
+
+With `TRANSPORT=stdio` the server speaks MCP over stdin/stdout and is meant to be spawned by the client, which is what Options 1 and 2 do for you.
+
+The HTTP server binds to `127.0.0.1` only and has no authentication of its own. If it needs to be reachable from another host, put it behind something that adds TLS and auth (an SSH tunnel or an authenticating reverse proxy) rather than changing the bind address.
+
+### Build the .mcpb yourself (maintainers)
+
+The bundle is produced by `scripts/build-mcpb.mjs` using the `mcpb` CLI, which is a dev dependency. From a source checkout:
+
+```bash
+npm install
+npm run build:mcpb
+```
+
+The script:
+
+1. Compiles TypeScript to `dist/` (via `npm run build`).
+2. Rewrites `manifest.json` so its `version` matches `package.json` and its `tools` list matches every `registerTool` call in `src/tools/`. Commit the result. The manifest in git is always the one that was last built.
+3. Validates the manifest with `mcpb validate`.
+4. Stages `dist/`, `package.json`, `LICENSE`, and `manifest.json` in `build/mcpb/` and runs `npm ci --omit=dev` there, so only production dependencies are bundled. `.mcpbignore` adds a few exclusions on top of the CLI's defaults.
+5. Packs the staging directory into `release/sophos-central-mcp-server-<version>.mcpb`.
+
+`build/` and `release/` are git-ignored. To inspect a bundle without installing it, `npx mcpb info release/<file>.mcpb` prints its size and signature state, and `npx mcpb unpack release/<file>.mcpb <dir>` extracts it. Signing is optional; `npx mcpb sign --self-signed release/<file>.mcpb` adds a self-signed signature if you want one.
+
+**Cutting a release:** bump `version` in `package.json`, run `npm run build:mcpb`, commit `package.json`, `package-lock.json`, and `manifest.json`, tag, and attach the `.mcpb` from `release/` to the GitHub release. Publish to npm as before so the Claude Code and self-hosted options pick up the same version.
 
 ## Features
 
 - **Universal caller support**: Works with partner, organisation, and tenant-level API credentials
 - **Multi-tenant**: Partner/org callers can query across all managed tenants
-- **Partner gap analysis**: Single-call sales opportunity report across all managed tenants — fetches health data in parallel and returns a compact ranked list of security gaps per customer
+- **Partner gap analysis**: Single-call sales opportunity report across all managed tenants. Fetches health data in parallel and returns a compact ranked list of security gaps per customer
 - **Auto region routing**: Discovers tenant data regions via `/whoami/v1` and routes requests to the correct regional API host
 - **Token lifecycle**: Automatic OAuth2 token refresh before expiry
 - **Rate limit handling**: Retry with backoff on 429 responses
-- **Dual transport**: Streamable HTTP (for Claude Desktop / Claude Code) or stdio
+- **Dual transport**: stdio (Claude Desktop, Claude Code, and the `.mcpb` bundle) or streamable HTTP (self-hosted)
+- **One-click install**: Ships as a Claude Desktop extension (`.mcpb`) with credentials held in the OS secure store
 - **Full API coverage**: 288 tools across endpoints, alerts, policies, firewalls, web filtering, licensing, audit events, email, mobile, XDR, cases, SIEM, and more
 
 ## Screenshots
@@ -96,20 +155,9 @@ claude mcp add sophos-central ^
 
 ![Tenant health detail and endpoints](docs/screenshots/tenant-health-detail.png)
 
-## Prerequisites
-
-- Node.js 20 or later
-- Sophos Central API credentials (Client ID + Client Secret)
-
-### Creating API Credentials
-
-**Tenant-level**: In Sophos Central, go to **Settings > API Credentials Management** and create a new credential.
-
-**Partner-level**: In the Sophos Partner Dashboard, create API credentials under **Settings > API Credentials**.
-
-**Organisation-level**: In Sophos Central Enterprise, use **Global Settings > API Credentials Management**.
-
 ## Configuration
+
+Applies to the Claude Code and self-hosted options. The Claude Desktop extension asks for the credentials in its install dialog and sets `TRANSPORT=stdio` itself.
 
 Copy `.env.example` to `.env` and set your credentials:
 
@@ -124,9 +172,9 @@ TRANSPORT=http
 |----------|----------|---------|-------------|
 | `SOPHOS_CLIENT_ID` | Yes | - | OAuth2 client ID |
 | `SOPHOS_CLIENT_SECRET` | Yes | - | OAuth2 client secret |
-| `SOPHOS_TENANT_ID` | No | - | Lock to a single tenant (useful for tenant-level creds) |
 | `PORT` | No | 3100 | HTTP server port |
 | `TRANSPORT` | No | http | `http` for streamable HTTP, `stdio` for subprocess mode |
+| `CHARACTER_LIMIT` | No | 50000 | Maximum characters per tool response before truncation (minimum 10000) |
 
 ## Tools
 
@@ -652,6 +700,8 @@ src/
 └── types/sophos.ts              # Sophos API response types
 ```
 
+Packaging files at the repo root: `manifest.json` (MCPB manifest, regenerated by the build), `scripts/build-mcpb.mjs` (bundle builder), and `.mcpbignore` (extra exclusions applied when packing).
+
 ## Security
 
 - Credentials are read from environment variables only, never logged
@@ -659,6 +709,7 @@ src/
 - HTTP server binds to `127.0.0.1` (localhost only)
 - Write actions have `destructiveHint` annotations so clients can warn users
 - Partner/org callers require explicit `tenant_id` on every call
+- With the `.mcpb` install, Claude Desktop holds the credentials in the OS secure store (they are `sensitive` in `manifest.json`) and hands them to the server as environment variables when it starts the process
 
 ## License
 

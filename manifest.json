@@ -1,0 +1,1228 @@
+{
+  "manifest_version": "0.3",
+  "name": "sophos-central-mcp-server",
+  "display_name": "Sophos Central",
+  "version": "0.5.0",
+  "description": "Query and manage Sophos Central from Claude. 288 tools across 20 API namespaces: endpoints, alerts, policies, firewalls, email, mobile, XDR, cases, SIEM, licensing, and more.",
+  "long_description": "Connects Claude to the Sophos Central REST APIs so you can list and act on endpoints, alerts, policies, firewalls, email quarantine, mobile devices, XDR Data Lake queries, cases, SIEM feeds, licensing, audit events, and more from a chat.\n\nWorks with tenant, partner, and organisation API credentials. Partner and organisation credentials unlock the cross-tenant tools (`sophos_list_tenants`, `sophos_list_account_health`, `sophos_partner_gap_analysis`) and every tenant-scoped tool then needs a `tenant_id`. Tenant credentials operate on that tenant only. Regional API hosts are discovered automatically.\n\nWrite actions carry `destructiveHint` annotations so clients can warn before isolating an endpoint, wiping a device, deleting a policy, and similar operations. The full tool list is in the project README.",
+  "author": {
+    "name": "Aaron Jacobs",
+    "url": "https://github.com/Aaronjacobs000"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Aaronjacobs000/sophos-central-mcp"
+  },
+  "homepage": "https://github.com/Aaronjacobs000/sophos-central-mcp",
+  "documentation": "https://github.com/Aaronjacobs000/sophos-central-mcp#readme",
+  "support": "https://github.com/Aaronjacobs000/sophos-central-mcp/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/dist/index.js"
+      ],
+      "env": {
+        "SOPHOS_CLIENT_ID": "${user_config.sophos_client_id}",
+        "SOPHOS_CLIENT_SECRET": "${user_config.sophos_client_secret}",
+        "TRANSPORT": "stdio"
+      }
+    }
+  },
+  "user_config": {
+    "sophos_client_id": {
+      "type": "string",
+      "title": "Sophos Central Client ID",
+      "description": "OAuth2 client ID of a Sophos Central API credential. Create one in Sophos Central (Settings > API Credentials Management), the Sophos Partner Dashboard (Settings > API Credentials), or Sophos Central Enterprise (Global Settings > API Credentials Management).",
+      "sensitive": true,
+      "required": true
+    },
+    "sophos_client_secret": {
+      "type": "string",
+      "title": "Sophos Central Client Secret",
+      "description": "OAuth2 client secret that pairs with the client ID above. Stored in your operating system's secure storage and passed to the server only as an environment variable.",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "tools": [
+    {
+      "name": "sophos_list_tenants",
+      "description": "List all tenants managed by this partner or organisation account."
+    },
+    {
+      "name": "sophos_list_alerts",
+      "description": "List alerts from a Sophos Central tenant with optional filtering."
+    },
+    {
+      "name": "sophos_get_alert",
+      "description": "Get full details of a specific Sophos Central alert by ID."
+    },
+    {
+      "name": "sophos_acknowledge_alert",
+      "description": "Acknowledge a Sophos Central alert, marking it as reviewed."
+    },
+    {
+      "name": "sophos_search_alerts",
+      "description": "Search alerts using the advanced search endpoint with structured filters."
+    },
+    {
+      "name": "sophos_list_endpoints",
+      "description": "List endpoints (computers and servers) from a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_get_endpoint",
+      "description": "Get full details of a specific endpoint by ID."
+    },
+    {
+      "name": "sophos_scan_endpoint",
+      "description": "Trigger an antivirus scan on a specific endpoint."
+    },
+    {
+      "name": "sophos_isolate_endpoint",
+      "description": "Network-isolate a specific endpoint, preventing all network communication except to Sophos Central."
+    },
+    {
+      "name": "sophos_release_endpoint",
+      "description": "Remove network isolation from an endpoint, restoring full connectivity."
+    },
+    {
+      "name": "sophos_delete_endpoint",
+      "description": "Delete a specific endpoint from Sophos Central."
+    },
+    {
+      "name": "sophos_bulk_delete_endpoints",
+      "description": "Bulk delete multiple endpoints from Sophos Central."
+    },
+    {
+      "name": "sophos_get_tamper_protection",
+      "description": "Get tamper protection status and password for a specific endpoint."
+    },
+    {
+      "name": "sophos_toggle_tamper_protection",
+      "description": "Enable or disable tamper protection on a specific endpoint."
+    },
+    {
+      "name": "sophos_get_adaptive_attack_protection",
+      "description": "Get the Adaptive Attack Protection (AAP) status for a specific endpoint."
+    },
+    {
+      "name": "sophos_toggle_adaptive_attack_protection",
+      "description": "Enable or disable Adaptive Attack Protection (AAP) on a specific endpoint."
+    },
+    {
+      "name": "sophos_trigger_update_check",
+      "description": "Trigger a software update check on a specific endpoint."
+    },
+    {
+      "name": "sophos_request_forensic_logs",
+      "description": "Request forensic log upload from a specific endpoint."
+    },
+    {
+      "name": "sophos_get_forensic_log_status",
+      "description": "Get the status of a forensic log upload request."
+    },
+    {
+      "name": "sophos_request_memory_dump",
+      "description": "Request a memory dump from a specific endpoint."
+    },
+    {
+      "name": "sophos_get_memory_dump_status",
+      "description": "Get the status of a memory dump request."
+    },
+    {
+      "name": "sophos_bulk_isolate_endpoints",
+      "description": "Bulk isolate or release multiple endpoints at once."
+    },
+    {
+      "name": "sophos_get_endpoint_isolation_status",
+      "description": "Get the current isolation status of a specific endpoint."
+    },
+    {
+      "name": "sophos_get_account_health",
+      "description": "Get the account health check scores for a single Sophos Central tenant."
+    },
+    {
+      "name": "sophos_list_account_health",
+      "description": "Fetch account health scores for all managed tenants in parallel and return a ranked summary."
+    },
+    {
+      "name": "sophos_partner_gap_analysis",
+      "description": "Identify security gaps and upsell opportunities across all managed tenants in a single call."
+    },
+    {
+      "name": "sophos_list_users",
+      "description": "List directory users in a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_list_admins",
+      "description": "List administrator accounts in a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_list_roles",
+      "description": "List available admin roles in a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_get_user",
+      "description": "Get full details of a specific directory user."
+    },
+    {
+      "name": "sophos_create_user",
+      "description": "Create a new directory user in a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_update_user",
+      "description": "Update an existing directory user's details."
+    },
+    {
+      "name": "sophos_delete_user",
+      "description": "Delete a directory user from a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_list_user_groups",
+      "description": "List directory user groups in a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_get_user_group",
+      "description": "Get full details of a specific directory user group."
+    },
+    {
+      "name": "sophos_create_user_group",
+      "description": "Create a new directory user group in a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_update_user_group",
+      "description": "Update an existing directory user group's name or description."
+    },
+    {
+      "name": "sophos_delete_user_group",
+      "description": "Delete a directory user group from a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_list_user_group_members",
+      "description": "List the users that are members of a specific directory user group."
+    },
+    {
+      "name": "sophos_add_users_to_group",
+      "description": "Add one or more users to an existing directory user group."
+    },
+    {
+      "name": "sophos_remove_user_from_group",
+      "description": "Remove a single user from a directory user group."
+    },
+    {
+      "name": "sophos_list_user_group_endpoints",
+      "description": "List endpoints (devices) associated with a specific directory user group."
+    },
+    {
+      "name": "sophos_list_user_group_policies",
+      "description": "List policies assigned to a specific directory user group."
+    },
+    {
+      "name": "sophos_list_policies",
+      "description": "List endpoint protection policies for a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_get_policy",
+      "description": "Get full details of a specific endpoint policy including all settings."
+    },
+    {
+      "name": "sophos_update_policy",
+      "description": "Update an endpoint policy's properties or settings."
+    },
+    {
+      "name": "sophos_clone_policy",
+      "description": "Create a new policy by cloning an existing one."
+    },
+    {
+      "name": "sophos_create_policy",
+      "description": "Create a new endpoint policy in Sophos Central."
+    },
+    {
+      "name": "sophos_delete_policy",
+      "description": "Delete an endpoint policy from Sophos Central."
+    },
+    {
+      "name": "sophos_list_endpoint_groups",
+      "description": "List endpoint groups in a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_get_endpoint_group",
+      "description": "Get full details of an endpoint group including its member endpoints."
+    },
+    {
+      "name": "sophos_create_endpoint_group",
+      "description": "Create a new endpoint group."
+    },
+    {
+      "name": "sophos_update_endpoint_group",
+      "description": "Update an existing endpoint group's name or description."
+    },
+    {
+      "name": "sophos_delete_endpoint_group",
+      "description": "Delete an endpoint group."
+    },
+    {
+      "name": "sophos_add_endpoints_to_group",
+      "description": "Add one or more endpoints to an existing endpoint group."
+    },
+    {
+      "name": "sophos_remove_endpoint_from_group",
+      "description": "Remove a single endpoint from an endpoint group."
+    },
+    {
+      "name": "sophos_list_exclusions",
+      "description": "List global scanning exclusions configured for a tenant."
+    },
+    {
+      "name": "sophos_add_exclusion",
+      "description": "Add a new global scanning exclusion."
+    },
+    {
+      "name": "sophos_delete_exclusion",
+      "description": "Delete a global scanning exclusion by ID."
+    },
+    {
+      "name": "sophos_list_allowed_items",
+      "description": "List globally allowed items (applications/files permitted despite detections)."
+    },
+    {
+      "name": "sophos_add_allowed_item",
+      "description": "Add a globally allowed item (permit an application/file despite detections)."
+    },
+    {
+      "name": "sophos_delete_allowed_item",
+      "description": "Remove a globally allowed item, restoring normal detection behaviour."
+    },
+    {
+      "name": "sophos_list_blocked_items",
+      "description": "List globally blocked items (applications/files blocked on all endpoints)."
+    },
+    {
+      "name": "sophos_add_blocked_item",
+      "description": "Add a globally blocked item to prevent an application/file from running."
+    },
+    {
+      "name": "sophos_delete_blocked_item",
+      "description": "Remove a globally blocked item, allowing it to run again."
+    },
+    {
+      "name": "sophos_list_cases",
+      "description": "List investigation cases from a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_get_case",
+      "description": "Get full details of a specific Sophos Central case by ID."
+    },
+    {
+      "name": "sophos_create_case",
+      "description": "Create a new self-managed investigation case in Sophos Central."
+    },
+    {
+      "name": "sophos_update_case",
+      "description": "Update an existing self-managed case in Sophos Central."
+    },
+    {
+      "name": "sophos_list_case_detections",
+      "description": "List the detections associated with a specific Sophos Central case."
+    },
+    {
+      "name": "sophos_get_case_mitre_summary",
+      "description": "Get the MITRE ATT&CK tactics and techniques summary for a Sophos Central case."
+    },
+    {
+      "name": "sophos_delete_case",
+      "description": "Delete an investigation case from Sophos Central."
+    },
+    {
+      "name": "sophos_list_case_impacted_entities",
+      "description": "List impacted entities (endpoints, users) associated with a Sophos Central case."
+    },
+    {
+      "name": "sophos_get_case_detection",
+      "description": "Get details of a specific detection within a Sophos Central case."
+    },
+    {
+      "name": "sophos_run_detections_query",
+      "description": "Start an asynchronous query to retrieve individual detections (XDR/EDR findings)."
+    },
+    {
+      "name": "sophos_get_detections_run",
+      "description": "Poll the status of a detections query run started with sophos_run_detections_query."
+    },
+    {
+      "name": "sophos_get_detections_results",
+      "description": "Retrieve results from a completed detections query run."
+    },
+    {
+      "name": "sophos_run_detection_groups_query",
+      "description": "Start an asynchronous query to retrieve grouped detections (related detections grouped together)."
+    },
+    {
+      "name": "sophos_get_detection_groups_run",
+      "description": "Poll the status of a detection groups query run started with sophos_run_detection_groups_query."
+    },
+    {
+      "name": "sophos_get_detection_groups_results",
+      "description": "Retrieve results from a completed detection groups query run."
+    },
+    {
+      "name": "sophos_list_siem_events",
+      "description": "Retrieve security events from the Sophos SIEM API."
+    },
+    {
+      "name": "sophos_list_siem_alerts",
+      "description": "Retrieve security alerts from the Sophos SIEM API."
+    },
+    {
+      "name": "sophos_run_xdr_query",
+      "description": "Start an asynchronous SQL query against the Sophos XDR Data Lake."
+    },
+    {
+      "name": "sophos_get_xdr_query_run",
+      "description": "Poll the status of an XDR Data Lake query run started with sophos_run_xdr_query."
+    },
+    {
+      "name": "sophos_get_xdr_query_results",
+      "description": "Retrieve results from a completed XDR Data Lake query run."
+    },
+    {
+      "name": "sophos_list_xdr_query_runs",
+      "description": "List XDR Data Lake query runs for a tenant."
+    },
+    {
+      "name": "sophos_cancel_xdr_query_run",
+      "description": "Cancel a running XDR Data Lake query."
+    },
+    {
+      "name": "sophos_list_xdr_query_categories",
+      "description": "List available XDR Data Lake query categories."
+    },
+    {
+      "name": "sophos_get_xdr_query_category",
+      "description": "Get details of a specific XDR Data Lake query category."
+    },
+    {
+      "name": "sophos_list_xdr_queries",
+      "description": "List saved/canned XDR Data Lake queries."
+    },
+    {
+      "name": "sophos_get_xdr_query",
+      "description": "Get details of a specific saved XDR Data Lake query including its SQL template."
+    },
+    {
+      "name": "sophos_list_live_discover_queries",
+      "description": "List available saved queries for Sophos Live Discover."
+    },
+    {
+      "name": "sophos_run_live_discover_query",
+      "description": "Start an asynchronous Live Discover query on live endpoints using OSquery SQL."
+    },
+    {
+      "name": "sophos_get_live_discover_run",
+      "description": "Poll the status of a Live Discover query run started with sophos_run_live_discover_query."
+    },
+    {
+      "name": "sophos_get_live_discover_results",
+      "description": "Retrieve aggregated results from a Live Discover query run."
+    },
+    {
+      "name": "sophos_get_admin",
+      "description": "Get full details of a specific administrator account."
+    },
+    {
+      "name": "sophos_create_admin",
+      "description": "Create a new administrator account in a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_delete_admin",
+      "description": "Delete an administrator account from a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_list_admin_role_assignments",
+      "description": "List role assignments for a specific administrator."
+    },
+    {
+      "name": "sophos_add_admin_role_assignment",
+      "description": "Add a role assignment to an administrator."
+    },
+    {
+      "name": "sophos_delete_admin_role_assignment",
+      "description": "Remove a role assignment from an administrator."
+    },
+    {
+      "name": "sophos_get_admin_role_assignment",
+      "description": "Get details of a specific role assignment for an administrator."
+    },
+    {
+      "name": "sophos_create_role",
+      "description": "Create a new admin role in a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_get_role",
+      "description": "Get full details of a specific admin role."
+    },
+    {
+      "name": "sophos_update_role",
+      "description": "Update an existing admin role."
+    },
+    {
+      "name": "sophos_delete_role",
+      "description": "Delete an admin role from a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_list_permission_sets",
+      "description": "List available permission sets that can be assigned to roles."
+    },
+    {
+      "name": "sophos_reset_admin_password",
+      "description": "Trigger a password reset for an administrator. The admin will receive a password reset email."
+    },
+    {
+      "name": "sophos_list_migrations",
+      "description": "List endpoint migration jobs for a tenant."
+    },
+    {
+      "name": "sophos_get_migration",
+      "description": "Get full details of a specific endpoint migration job."
+    },
+    {
+      "name": "sophos_create_migration",
+      "description": "Create a new endpoint migration job to migrate endpoints between tenants."
+    },
+    {
+      "name": "sophos_delete_migration",
+      "description": "Delete an endpoint migration job."
+    },
+    {
+      "name": "sophos_list_migration_endpoints",
+      "description": "List endpoints in a specific migration job."
+    },
+    {
+      "name": "sophos_list_recommended_packages",
+      "description": "List recommended software packages for endpoint deployment."
+    },
+    {
+      "name": "sophos_list_static_packages",
+      "description": "List static software packages for endpoint deployment."
+    },
+    {
+      "name": "sophos_list_installer_downloads",
+      "description": "List available Sophos endpoint installer packages for a tenant."
+    },
+    {
+      "name": "sophos_get_installer_download",
+      "description": "Get a specific installer download link by ID."
+    },
+    {
+      "name": "sophos_list_blocked_addresses",
+      "description": "List blocked network addresses (IPs and domains) for a tenant."
+    },
+    {
+      "name": "sophos_add_blocked_address",
+      "description": "Add a blocked network address (IP or domain) across all endpoints."
+    },
+    {
+      "name": "sophos_delete_blocked_address",
+      "description": "Delete a blocked network address by ID."
+    },
+    {
+      "name": "sophos_list_local_sites",
+      "description": "List local site definitions for web control."
+    },
+    {
+      "name": "sophos_add_local_site",
+      "description": "Add a local site definition for web control."
+    },
+    {
+      "name": "sophos_update_local_site",
+      "description": "Update a local site definition for web control."
+    },
+    {
+      "name": "sophos_delete_local_site",
+      "description": "Delete a local site definition from web control."
+    },
+    {
+      "name": "sophos_list_web_control_categories",
+      "description": "List all web control categories available for classifying websites."
+    },
+    {
+      "name": "sophos_get_tls_decryption_settings",
+      "description": "Get the current TLS decryption settings for web control."
+    },
+    {
+      "name": "sophos_update_tls_decryption_settings",
+      "description": "Update TLS decryption settings for web control."
+    },
+    {
+      "name": "sophos_get_global_tamper_protection",
+      "description": "Get the global tamper protection settings for a tenant."
+    },
+    {
+      "name": "sophos_update_global_tamper_protection",
+      "description": "Update the global tamper protection setting for a tenant."
+    },
+    {
+      "name": "sophos_list_detected_exploits",
+      "description": "List detected exploits across endpoints in the tenant."
+    },
+    {
+      "name": "sophos_get_detected_exploit",
+      "description": "Get details of a specific detected exploit by ID."
+    },
+    {
+      "name": "sophos_list_exploit_mitigation_categories",
+      "description": "List exploit mitigation categories."
+    },
+    {
+      "name": "sophos_get_exploit_mitigation_category",
+      "description": "Get details of a specific exploit mitigation category by ID."
+    },
+    {
+      "name": "sophos_list_exploit_mitigation_apps",
+      "description": "List applications configured for exploit mitigation."
+    },
+    {
+      "name": "sophos_get_exploit_mitigation_app",
+      "description": "Get details of a specific exploit mitigation application by ID."
+    },
+    {
+      "name": "sophos_add_exploit_mitigation_app",
+      "description": "Add an application to exploit mitigation protection."
+    },
+    {
+      "name": "sophos_update_exploit_mitigation_app",
+      "description": "Update an exploit mitigation application configuration."
+    },
+    {
+      "name": "sophos_list_ips_exclusions",
+      "description": "List intrusion prevention system (IPS) exclusions."
+    },
+    {
+      "name": "sophos_add_ips_exclusion",
+      "description": "Add an intrusion prevention system (IPS) exclusion."
+    },
+    {
+      "name": "sophos_delete_ips_exclusion",
+      "description": "Delete an IPS exclusion by ID, restoring IPS inspection for that address."
+    },
+    {
+      "name": "sophos_list_isolation_exclusions",
+      "description": "List isolation exclusions: addresses that remain reachable when an endpoint is isolated."
+    },
+    {
+      "name": "sophos_add_isolation_exclusion",
+      "description": "Add an isolation exclusion so an address remains reachable during endpoint isolation."
+    },
+    {
+      "name": "sophos_delete_isolation_exclusion",
+      "description": "Delete an isolation exclusion by ID."
+    },
+    {
+      "name": "sophos_get_lockdown_settings",
+      "description": "Get server lockdown settings for a tenant."
+    },
+    {
+      "name": "sophos_update_lockdown_settings",
+      "description": "Update server lockdown settings for a tenant."
+    },
+    {
+      "name": "sophos_list_firewalls",
+      "description": "List managed firewalls in a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_update_firewall",
+      "description": "Update a managed firewall's name or group assignment."
+    },
+    {
+      "name": "sophos_delete_firewall",
+      "description": "Delete a managed firewall from Sophos Central."
+    },
+    {
+      "name": "sophos_firewall_action",
+      "description": "Perform an action on a managed firewall."
+    },
+    {
+      "name": "sophos_check_firmware_upgrade",
+      "description": "Check if firmware upgrades are available for one or more managed firewalls."
+    },
+    {
+      "name": "sophos_start_firmware_upgrade",
+      "description": "Start (or schedule) a firmware upgrade on one or more managed firewalls."
+    },
+    {
+      "name": "sophos_cancel_firmware_upgrade",
+      "description": "Cancel scheduled firmware upgrades on one or more managed firewalls."
+    },
+    {
+      "name": "sophos_list_firewall_groups",
+      "description": "List firewall groups in a Sophos Central tenant."
+    },
+    {
+      "name": "sophos_get_firewall_group",
+      "description": "Get full details of a firewall group by ID."
+    },
+    {
+      "name": "sophos_create_firewall_group",
+      "description": "Create a new firewall group for organising managed firewalls."
+    },
+    {
+      "name": "sophos_update_firewall_group",
+      "description": "Update an existing firewall group's name or description."
+    },
+    {
+      "name": "sophos_delete_firewall_group",
+      "description": "Delete a firewall group."
+    },
+    {
+      "name": "sophos_get_firewall_sync_status",
+      "description": "Get the configuration sync status of the firewalls in a firewall group."
+    },
+    {
+      "name": "sophos_get_threat_feed_settings",
+      "description": "Get the MDR threat feed configuration and status for a managed firewall."
+    },
+    {
+      "name": "sophos_update_threat_feed_settings",
+      "description": "Update the MDR threat feed settings on a managed firewall."
+    },
+    {
+      "name": "sophos_search_threat_feed_indicators",
+      "description": "Search the MDR threat feed indicators on a managed firewall."
+    },
+    {
+      "name": "sophos_get_firewall_transaction",
+      "description": "Poll a per-firewall transaction (MDR threat feed operations)."
+    },
+    {
+      "name": "sophos_export_firewall_config",
+      "description": "Start a configuration export (backup) of a managed firewall."
+    },
+    {
+      "name": "sophos_get_firewall_import_export_transaction",
+      "description": "Poll the status of a firewall configuration export or import transaction."
+    },
+    {
+      "name": "sophos_download_firewall_backup",
+      "description": "Download a finished firewall configuration export (backup) to a local file."
+    },
+    {
+      "name": "sophos_import_firewall_config",
+      "description": "Import a previously exported configuration archive into one or more firewalls."
+    },
+    {
+      "name": "sophos_search_quarantine",
+      "description": "Search quarantined emails in Sophos Email with optional filters."
+    },
+    {
+      "name": "sophos_preview_quarantine_message",
+      "description": "Preview the content of a quarantined email by message ID."
+    },
+    {
+      "name": "sophos_get_quarantine_urls",
+      "description": "Get the URLs found in a quarantined email."
+    },
+    {
+      "name": "sophos_get_quarantine_attachments",
+      "description": "Get attachment information for a quarantined email."
+    },
+    {
+      "name": "sophos_release_quarantine_message",
+      "description": "Release a quarantined email to its intended recipient."
+    },
+    {
+      "name": "sophos_delete_quarantine_message",
+      "description": "Permanently delete a quarantined email."
+    },
+    {
+      "name": "sophos_strip_quarantine_attachments",
+      "description": "Strip attachments from a quarantined email and release the message."
+    },
+    {
+      "name": "sophos_reattach_quarantine_attachments",
+      "description": "Reattach previously stripped attachments to a quarantined email."
+    },
+    {
+      "name": "sophos_download_quarantine_attachment",
+      "description": "Download a specific attachment from a quarantined email."
+    },
+    {
+      "name": "sophos_search_post_delivery_quarantine",
+      "description": "Search post-delivery quarantined emails in Sophos Email."
+    },
+    {
+      "name": "sophos_preview_post_delivery_message",
+      "description": "Preview the content of a post-delivery quarantined email."
+    },
+    {
+      "name": "sophos_get_post_delivery_attachments",
+      "description": "Get attachment information for a post-delivery quarantined email."
+    },
+    {
+      "name": "sophos_release_post_delivery_message",
+      "description": "Release a post-delivery quarantined email back to the recipient."
+    },
+    {
+      "name": "sophos_delete_post_delivery_message",
+      "description": "Permanently delete a post-delivery quarantined email."
+    },
+    {
+      "name": "sophos_download_post_delivery_attachment",
+      "description": "Download a specific attachment from a post-delivery quarantined email."
+    },
+    {
+      "name": "sophos_clawback_message",
+      "description": "Clawback (recall) a delivered email message from the recipient's mailbox."
+    },
+    {
+      "name": "sophos_get_clawback_status",
+      "description": "Get the status of a clawback (recall) action."
+    },
+    {
+      "name": "sophos_list_mailboxes",
+      "description": "List mailboxes managed by Sophos Email protection."
+    },
+    {
+      "name": "sophos_create_mailbox",
+      "description": "Create a new mailbox in Sophos Email protection."
+    },
+    {
+      "name": "sophos_bulk_create_mailboxes",
+      "description": "Bulk create multiple mailboxes in Sophos Email protection."
+    },
+    {
+      "name": "sophos_get_mailbox",
+      "description": "Get full details of a specific mailbox by ID."
+    },
+    {
+      "name": "sophos_update_mailbox",
+      "description": "Update an existing mailbox in Sophos Email protection."
+    },
+    {
+      "name": "sophos_delete_mailbox",
+      "description": "Delete a mailbox from Sophos Email protection."
+    },
+    {
+      "name": "sophos_list_mailbox_aliases",
+      "description": "List email aliases for a specific mailbox."
+    },
+    {
+      "name": "sophos_add_mailbox_alias",
+      "description": "Add an email alias to a mailbox."
+    },
+    {
+      "name": "sophos_delete_mailbox_alias",
+      "description": "Delete an email alias from a mailbox."
+    },
+    {
+      "name": "sophos_list_mailbox_delegates",
+      "description": "List delegates for a specific mailbox."
+    },
+    {
+      "name": "sophos_add_mailbox_delegate",
+      "description": "Add a delegate to a mailbox."
+    },
+    {
+      "name": "sophos_delete_mailbox_delegate",
+      "description": "Remove a delegate from a mailbox."
+    },
+    {
+      "name": "sophos_list_dns_locations",
+      "description": "List DNS protection locations configured for a tenant."
+    },
+    {
+      "name": "sophos_get_dns_location",
+      "description": "Get details of a specific DNS protection location."
+    },
+    {
+      "name": "sophos_create_dns_location",
+      "description": "Create a new DNS protection location."
+    },
+    {
+      "name": "sophos_update_dns_location",
+      "description": "Update an existing DNS protection location."
+    },
+    {
+      "name": "sophos_delete_dns_location",
+      "description": "Delete a DNS protection location."
+    },
+    {
+      "name": "sophos_list_cloud_security_profiles",
+      "description": "List cloud security profiles configured for a tenant."
+    },
+    {
+      "name": "sophos_get_cloud_security_profile",
+      "description": "Get details of a specific cloud security profile."
+    },
+    {
+      "name": "sophos_create_cloud_security_profile",
+      "description": "Create a new cloud security profile."
+    },
+    {
+      "name": "sophos_update_cloud_security_profile",
+      "description": "Update an existing cloud security profile (full replacement via PUT)."
+    },
+    {
+      "name": "sophos_delete_cloud_security_profile",
+      "description": "Delete a cloud security profile."
+    },
+    {
+      "name": "sophos_list_wifi_mac_filters",
+      "description": "List Wi-Fi MAC filtering entries configured for a tenant."
+    },
+    {
+      "name": "sophos_add_wifi_mac_filter",
+      "description": "Add a MAC filtering entry to allow or deny a device by MAC address."
+    },
+    {
+      "name": "sophos_delete_wifi_mac_filter",
+      "description": "Delete a Wi-Fi MAC filtering entry."
+    },
+    {
+      "name": "sophos_create_attestation",
+      "description": "Create a user attestation/sign-off record."
+    },
+    {
+      "name": "sophos_get_attestation",
+      "description": "Get details of a specific user attestation."
+    },
+    {
+      "name": "sophos_create_tenant",
+      "description": "Create a new managed tenant under this partner/organization account."
+    },
+    {
+      "name": "sophos_get_managed_tenant",
+      "description": "Get detailed information about a specific managed tenant."
+    },
+    {
+      "name": "sophos_list_partner_roles",
+      "description": "List partner-level admin roles."
+    },
+    {
+      "name": "sophos_get_partner_role",
+      "description": "Get details of a specific partner-level role."
+    },
+    {
+      "name": "sophos_create_partner_role",
+      "description": "Create a new partner-level admin role."
+    },
+    {
+      "name": "sophos_delete_partner_role",
+      "description": "Delete a partner-level admin role."
+    },
+    {
+      "name": "sophos_list_partner_permission_sets",
+      "description": "List available partner-level permission sets."
+    },
+    {
+      "name": "sophos_list_partner_admins",
+      "description": "List partner-level administrator accounts."
+    },
+    {
+      "name": "sophos_get_partner_admin",
+      "description": "Get details of a specific partner-level administrator."
+    },
+    {
+      "name": "sophos_create_partner_admin",
+      "description": "Create a new partner-level administrator."
+    },
+    {
+      "name": "sophos_delete_partner_admin",
+      "description": "Delete a partner-level administrator account."
+    },
+    {
+      "name": "sophos_list_partner_admin_role_assignments",
+      "description": "List role assignments for a specific partner administrator."
+    },
+    {
+      "name": "sophos_add_partner_admin_role_assignment",
+      "description": "Add a role assignment to a partner administrator."
+    },
+    {
+      "name": "sophos_delete_partner_admin_role_assignment",
+      "description": "Remove a role assignment from a partner administrator."
+    },
+    {
+      "name": "sophos_get_billing_usage",
+      "description": "Get billing usage for a specific month."
+    },
+    {
+      "name": "sophos_get_billing_summary",
+      "description": "Get an aggregated billing summary for a specific month, ranked by customer revenue."
+    },
+    {
+      "name": "sophos_get_mobile_auto_enrollment",
+      "description": "Get the auto-enrollment settings for Sophos Mobile."
+    },
+    {
+      "name": "sophos_update_mobile_auto_enrollment",
+      "description": "Update the auto-enrollment settings for Sophos Mobile."
+    },
+    {
+      "name": "sophos_list_mobile_os",
+      "description": "List supported mobile operating systems in Sophos Mobile."
+    },
+    {
+      "name": "sophos_list_mobile_devices",
+      "description": "List mobile devices managed by Sophos Mobile."
+    },
+    {
+      "name": "sophos_get_mobile_device",
+      "description": "Get full details of a specific mobile device by ID."
+    },
+    {
+      "name": "sophos_create_mobile_device",
+      "description": "Enroll a new mobile device in Sophos Mobile."
+    },
+    {
+      "name": "sophos_update_mobile_device",
+      "description": "Update a mobile device's properties in Sophos Mobile."
+    },
+    {
+      "name": "sophos_delete_mobile_device",
+      "description": "Delete (unenroll) a mobile device from Sophos Mobile."
+    },
+    {
+      "name": "sophos_list_mobile_device_properties",
+      "description": "Get the properties of a specific mobile device."
+    },
+    {
+      "name": "sophos_get_mobile_device_compliance",
+      "description": "Get the compliance status of a specific mobile device."
+    },
+    {
+      "name": "sophos_get_mobile_device_scans",
+      "description": "Get scan results for a specific mobile device."
+    },
+    {
+      "name": "sophos_get_mobile_device_policies",
+      "description": "Get policies assigned to a specific mobile device."
+    },
+    {
+      "name": "sophos_get_mobile_device_apps",
+      "description": "Get installed apps on a specific mobile device."
+    },
+    {
+      "name": "sophos_get_mobile_device_location",
+      "description": "Get the last known location of a specific mobile device."
+    },
+    {
+      "name": "sophos_list_mobile_device_groups",
+      "description": "List mobile device groups in Sophos Mobile."
+    },
+    {
+      "name": "sophos_get_mobile_device_group",
+      "description": "Get details of a specific mobile device group."
+    },
+    {
+      "name": "sophos_create_mobile_device_group",
+      "description": "Create a new mobile device group in Sophos Mobile."
+    },
+    {
+      "name": "sophos_update_mobile_device_group",
+      "description": "Update a mobile device group in Sophos Mobile."
+    },
+    {
+      "name": "sophos_delete_mobile_device_group",
+      "description": "Delete a mobile device group from Sophos Mobile."
+    },
+    {
+      "name": "sophos_sync_mobile_device",
+      "description": "Trigger a sync on a mobile device."
+    },
+    {
+      "name": "sophos_request_mobile_device_logs",
+      "description": "Request logs from a mobile device."
+    },
+    {
+      "name": "sophos_scan_mobile_device",
+      "description": "Trigger a security scan on a mobile device."
+    },
+    {
+      "name": "sophos_unenroll_mobile_device",
+      "description": "Unenroll a mobile device from Sophos Mobile management."
+    },
+    {
+      "name": "sophos_send_mobile_device_message",
+      "description": "Send a message to a mobile device."
+    },
+    {
+      "name": "sophos_locate_mobile_device",
+      "description": "Request a location update from a mobile device."
+    },
+    {
+      "name": "sophos_lock_mobile_device",
+      "description": "Remotely lock a mobile device."
+    },
+    {
+      "name": "sophos_wipe_mobile_device",
+      "description": "Remotely wipe a mobile device."
+    },
+    {
+      "name": "sophos_list_mobile_app_groups",
+      "description": "List mobile app groups in Sophos Mobile."
+    },
+    {
+      "name": "sophos_get_mobile_app_group",
+      "description": "Get details of a specific mobile app group."
+    },
+    {
+      "name": "sophos_create_mobile_app_group",
+      "description": "Create a new mobile app group in Sophos Mobile."
+    },
+    {
+      "name": "sophos_update_mobile_app_group",
+      "description": "Update a mobile app group in Sophos Mobile."
+    },
+    {
+      "name": "sophos_delete_mobile_app_group",
+      "description": "Delete a mobile app group from Sophos Mobile."
+    },
+    {
+      "name": "sophos_list_audit_events",
+      "description": "List audit events (who did what in Sophos Central)."
+    },
+    {
+      "name": "sophos_list_licenses",
+      "description": "List the product licenses of a tenant, including usage and entitlements."
+    },
+    {
+      "name": "sophos_list_firewall_licenses",
+      "description": "List firewall license details."
+    },
+    {
+      "name": "sophos_list_web_filtering_profiles",
+      "description": "List web filtering profiles in a tenant."
+    },
+    {
+      "name": "sophos_get_web_filtering_profile",
+      "description": "Get a web filtering profile by ID."
+    },
+    {
+      "name": "sophos_create_web_filtering_profile",
+      "description": "Create a web filtering profile."
+    },
+    {
+      "name": "sophos_update_web_filtering_profile",
+      "description": "Update (replace) a web filtering profile."
+    },
+    {
+      "name": "sophos_delete_web_filtering_profile",
+      "description": "Delete a web filtering profile."
+    },
+    {
+      "name": "sophos_clone_web_filtering_profile",
+      "description": "Clone a web filtering profile under a new name."
+    },
+    {
+      "name": "sophos_get_web_filtering_metadata",
+      "description": "Get web filtering profile metadata (available categories, groups, presets)."
+    },
+    {
+      "name": "sophos_list_site_lists",
+      "description": "List site lists in a tenant."
+    },
+    {
+      "name": "sophos_get_site_list",
+      "description": "Get a site list by ID."
+    },
+    {
+      "name": "sophos_create_site_list",
+      "description": "Create a site list."
+    },
+    {
+      "name": "sophos_update_site_list",
+      "description": "Update (replace) a site list."
+    },
+    {
+      "name": "sophos_delete_site_list",
+      "description": "Delete a site list."
+    },
+    {
+      "name": "sophos_clone_site_list",
+      "description": "Clone a site list under a new name."
+    },
+    {
+      "name": "sophos_list_sites",
+      "description": "List the sites in a site list."
+    },
+    {
+      "name": "sophos_add_site",
+      "description": "Add a single site to a site list."
+    },
+    {
+      "name": "sophos_delete_site",
+      "description": "Delete a single site from a site list."
+    },
+    {
+      "name": "sophos_get_switch_mac_filtering",
+      "description": "Get the global MAC filtering settings for Sophos Switches in a tenant."
+    },
+    {
+      "name": "sophos_update_switch_mac_filtering",
+      "description": "Replace the global MAC filtering address list for Sophos Switches."
+    },
+    {
+      "name": "sophos_list_switch_tasks",
+      "description": "List configuration tasks for Sophos Switches in a tenant."
+    },
+    {
+      "name": "sophos_list_access_tokens",
+      "description": "List a tenant's repository access tokens (e.g. Sophos Linux Sensor package tokens)."
+    },
+    {
+      "name": "sophos_create_access_token",
+      "description": "Create a repository access token for a tenant."
+    },
+    {
+      "name": "sophos_update_access_token",
+      "description": "Update a repository access token's label or expiry."
+    },
+    {
+      "name": "sophos_revoke_access_token",
+      "description": "Revoke a repository access token."
+    },
+    {
+      "name": "sophos_list_ba_quotes",
+      "description": "List distributor quotes (new, amendment, renewal)."
+    },
+    {
+      "name": "sophos_get_ba_quote",
+      "description": "Get a distributor quote by proposal number."
+    },
+    {
+      "name": "sophos_get_ba_partner_levels",
+      "description": "Return partner program level info for partners in a billing sub-region."
+    },
+    {
+      "name": "sophos_get_ba_pricing",
+      "description": "Return pricing info for a set of product lines for a reseller."
+    }
+  ],
+  "keywords": [
+    "sophos",
+    "sophos-central",
+    "mcp",
+    "security",
+    "soc",
+    "endpoint-management",
+    "xdr"
+  ],
+  "license": "MIT",
+  "privacy_policies": [
+    "https://sophos.com/trust"
+  ],
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "node": ">=20.0.0"
+    }
+  }
+}

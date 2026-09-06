@@ -8,6 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run build       # Compile TypeScript to dist/
 npm start           # Run the compiled server
 npm run dev         # Watch mode (tsc --watch)
+npm run build:mcpb  # Build the Claude Desktop extension bundle into release/
 ```
 
 There are no tests. TypeScript compilation (`npm run build`) is the main verification step — fix all type errors before considering a change complete.
@@ -17,6 +18,12 @@ Run the server locally:
 cp .env.example .env   # Then fill in credentials
 npm run build && npm start
 ```
+
+## MCPB packaging
+
+`manifest.json` at the repo root is the [MCP Bundle](https://github.com/modelcontextprotocol/mcpb) manifest. `scripts/build-mcpb.mjs` (run via `npm run build:mcpb`) rewrites its `version` from `package.json` and its `tools` array from every `registerTool` call in `src/tools/`, validates it, stages `dist/` plus production dependencies in `build/mcpb/`, and packs `release/sophos-central-mcp-server-<version>.mcpb`. Do not hand-edit `version` or `tools` in the manifest; edit the other fields (description, `user_config`, compatibility) directly and re-run the build. New tools must follow the `registerTool("name", { title: "...", description: `...` ...` shape or the build fails on purpose.
+
+Credentials come from `user_config` (`sophos_client_id`, `sophos_client_secret`, both `sensitive`) mapped to `SOPHOS_CLIENT_ID` / `SOPHOS_CLIENT_SECRET` in `server.mcp_config.env`, with `TRANSPORT=stdio` fixed.
 
 ## Architecture
 
