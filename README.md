@@ -16,7 +16,7 @@ Every install method needs a Client ID and Client Secret. The credential type de
 
 ### Node.js 20 or later (npm and self-hosted installs only)
 
-The `.mcpb` bundle for Claude Desktop does not need Node.js on your machine: Claude Desktop ships its own Node.js runtime and the bundle carries the server and all of its dependencies. Install Node.js 20+ only if you use the npx, Claude Code, or self-hosted options.
+The `.mcpb` bundle for Claude Desktop does not need Node.js on your machine: Claude Desktop ships its own Node.js runtime and the bundle carries the server and all of its dependencies. Install Node.js 20+ only if you use the Claude Code or self-hosted options.
 
 ## Install
 
@@ -25,9 +25,8 @@ Pick one:
 | Option | Best for | Needs Node.js? |
 |--------|----------|----------------|
 | [Claude Desktop extension (.mcpb)](#option-1-claude-desktop-extension-mcpb-recommended) | Claude Desktop users who want a two-minute install | No |
-| [Claude Desktop via npx](#option-2-claude-desktop-via-npx) | Claude Desktop users who prefer editing `claude_desktop_config.json` | Yes |
-| [Claude Code](#option-3-claude-code) | Terminal use with Claude Code | Yes |
-| [Self-hosted with npm](#option-4-self-hosted-with-npm-streamable-http-or-stdio) | Running the server yourself for any MCP client, over streamable HTTP or stdio | Yes |
+| [Claude Code](#option-2-claude-code) | Terminal use with Claude Code | Yes |
+| [Self-hosted with npm](#option-3-self-hosted-with-npm-streamable-http-or-stdio) | Running the server yourself for any MCP client, over streamable HTTP or stdio | Yes |
 
 ### Option 1: Claude Desktop extension (.mcpb, recommended)
 
@@ -42,51 +41,7 @@ To update, download the newer `.mcpb` and install it the same way. To remove it,
 
 The bundle runs the server in stdio mode and sets `TRANSPORT=stdio` for you. Which tools you get depends on the credential type, exactly as with the other install options: partner and organisation credentials unlock the cross-tenant tools, tenant credentials do not.
 
-### Option 2: Claude Desktop via npx
-
-Requires Node.js. Open your `claude_desktop_config.json` (File > Settings > Developer > Edit Config) and add the `sophos-central` block inside `mcpServers`:
-
-**macOS / Linux:**
-
-```json
-{
-  "mcpServers": {
-    "sophos-central": {
-      "command": "npx",
-      "args": ["-y", "sophos-central-mcp-server"],
-      "env": {
-        "SOPHOS_CLIENT_ID": "your-client-id",
-        "SOPHOS_CLIENT_SECRET": "your-client-secret",
-        "TRANSPORT": "stdio"
-      }
-    }
-  }
-}
-```
-
-**Windows:**
-
-```json
-{
-  "mcpServers": {
-    "sophos-central": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "sophos-central-mcp-server"],
-      "env": {
-        "SOPHOS_CLIENT_ID": "your-client-id",
-        "SOPHOS_CLIENT_SECRET": "your-client-secret",
-        "TRANSPORT": "stdio"
-      }
-    }
-  }
-}
-```
-
-> **If you already have other MCP servers configured**, don't replace the whole file. Add the `"sophos-central": { ... }` entry alongside your existing servers inside the `"mcpServers"` object.
-
-Replace `your-client-id` and `your-client-secret` with your [Sophos Central API credentials](#sophos-central-api-credentials). Restart Claude Desktop after saving. It downloads and runs the server automatically on first use.
-
-### Option 3: Claude Code
+### Option 2: Claude Code
 
 Requires Node.js. Run this once in your terminal. The `-e` flags save the credentials permanently to Claude Code's MCP config so you don't need to re-export them each session:
 
@@ -110,7 +65,7 @@ claude mcp add sophos-central ^
   -- cmd /c npx -y sophos-central-mcp-server
 ```
 
-### Option 4: Self-hosted with npm (streamable HTTP or stdio)
+### Option 3: Self-hosted with npm (streamable HTTP or stdio)
 
 Use this when you want to run the server yourself, on a workstation, a jump box, or in a container, for any MCP client that speaks streamable HTTP or can spawn a stdio process. Nothing here depends on the `.mcpb` bundle.
 
@@ -151,7 +106,7 @@ With `TRANSPORT=http` (the default) the server listens on `http://127.0.0.1:3100
 claude mcp add --transport http sophos-central http://127.0.0.1:3100/mcp
 ```
 
-With `TRANSPORT=stdio` the server speaks MCP over stdin/stdout and is meant to be spawned by the client, which is what Options 1 to 3 do for you.
+With `TRANSPORT=stdio` the server speaks MCP over stdin/stdout and is meant to be spawned by the client, which is what Options 1 and 2 do for you.
 
 The HTTP server binds to `127.0.0.1` only and has no authentication of its own. If it needs to be reachable from another host, put it behind something that adds TLS and auth (an SSH tunnel or an authenticating reverse proxy) rather than changing the bind address.
 
@@ -174,7 +129,7 @@ The script:
 
 `build/` and `release/` are git-ignored. To inspect a bundle without installing it, `npx mcpb info release/<file>.mcpb` prints its size and signature state, and `npx mcpb unpack release/<file>.mcpb <dir>` extracts it. Signing is optional; `npx mcpb sign --self-signed release/<file>.mcpb` adds a self-signed signature if you want one.
 
-**Cutting a release:** bump `version` in `package.json`, run `npm run build:mcpb`, commit `package.json`, `package-lock.json`, and `manifest.json`, tag, and attach the `.mcpb` from `release/` to the GitHub release. Publish to npm as before so the npx and self-hosted options pick up the same version.
+**Cutting a release:** bump `version` in `package.json`, run `npm run build:mcpb`, commit `package.json`, `package-lock.json`, and `manifest.json`, tag, and attach the `.mcpb` from `release/` to the GitHub release. Publish to npm as before so the Claude Code and self-hosted options pick up the same version.
 
 ## Features
 
@@ -202,7 +157,7 @@ The script:
 
 ## Configuration
 
-Applies to the npx, Claude Code, and self-hosted options. The Claude Desktop extension asks for the credentials in its install dialog and sets `TRANSPORT=stdio` itself.
+Applies to the Claude Code and self-hosted options. The Claude Desktop extension asks for the credentials in its install dialog and sets `TRANSPORT=stdio` itself.
 
 Copy `.env.example` to `.env` and set your credentials:
 
